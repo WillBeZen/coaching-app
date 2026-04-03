@@ -10,29 +10,38 @@
 
   <style>
     /* ── TOKENS ─────────────────────────────────────────────── */
-    :root {
-      --bg:          #0D0F14;
-      --surface:     #161922;
-      --surface2:    #1E2230;
-      --border:      #2A2F40;
-      --accent:      #F97316;
-      --accent-dim:  rgba(249,115,22,0.1);
-      --accent-glow: rgba(249,115,22,0.25);
-      --text:        #E8ECF4;
-      --text-muted:  #6B7280;
-      --text-dim:    #4B5563;
-      --success:     #10B981;
-      --success-dim: rgba(16,185,129,0.1);
-      --danger:      #EF4444;
-      --warning:     #FBBF24;
-      --purple:      #8B5CF6;
-      --purple-dim:  rgba(139,92,246,0.1);
-      --mono:  'Space Mono', monospace;
-      --sans:  'DM Sans', sans-serif;
-      --disp:  'Bebas Neue', sans-serif;
-      --r:  8px;
-      --rl: 12px;
-    }
+    /* ── HIGH-ENERGY TOKENS ───────────────────────────────────  */
+:root {
+  /* Deeper blacks to make the neon colors aggressively pop */
+  --bg:          #050507; 
+  --surface:     #12131A;
+  --surface2:    #1C1E29;
+  --border:      #2D3142;
+  
+  /* Volt Green: The ultimate high-kinetic running accent */
+  --accent:      #E0FF00;
+  --accent-dim:  rgba(224, 255, 0, 0.1);
+  --accent-glow: rgba(224, 255, 0, 0.35);
+  
+  /* Crisper text for better legibility on the move */
+  --text:        #F8FAFC;
+  --text-muted:  #94A3B8;
+  --text-dim:    #475569;
+  
+  /* Punchier semantic colors for pacing and zone alerts */
+  --success:     #00E676; /* Spring Green */
+  --success-dim: rgba(0, 230, 118, 0.1);
+  --danger:      #FF2A5F; /* Hyper Pink/Red for high HR zones */
+  --warning:     #FFEA00; /* Electric Yellow */
+  --purple:      #8A2BE2; /* Bright Blue-Violet for recovery/cool-downs */
+  --purple-dim:  rgba(138, 43, 226, 0.1);
+  
+  --mono:  'Space Mono', monospace;
+  --sans:  'DM Sans', sans-serif;
+  --disp:  'Bebas Neue', sans-serif;
+  --r:  8px;
+  --rl: 12px;
+}
 
     /* ── RESET ─────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
