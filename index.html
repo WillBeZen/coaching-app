@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PaceCoach</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── TOKENS ─────────────────────────────────────────────── */
+    :root {
+      --bg:          #0D0F14;
+      --surface:     #161922;
+      --surface2:    #1E2230;
+      --border:      #2A2F40;
+      --accent:      #F97316;
+      --accent-dim:  rgba(249,115,22,0.1);
+      --accent-glow: rgba(249,115,22,0.25);
+      --text:        #E8ECF4;
+      --text-muted:  #6B7280;
+      --text-dim:    #4B5563;
+      --success:     #10B981;
+      --success-dim: rgba(16,185,129,0.1);
+      --danger:      #EF4444;
+      --warning:     #FBBF24;
+      --purple:      #8B5CF6;
+      --purple-dim:  rgba(139,92,246,0.1);
+      --mono:  'Space Mono', monospace;
+      --sans:  'DM Sans', sans-serif;
+      --disp:  'Bebas Neue', sans-serif;
+      --r:  8px;
+      --rl: 12px;
+    }
+
+    /* ── RESET ─────────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100svh;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+    /* ── AUTH ─────────────────────────────────────────────── */
+    #auth-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100svh; padding: 24px;
+      background:
+        radial-gradient(ellipse at 25% 20%, rgba(249,115,22,0.08) 0%, transparent 55%),
+        radial-gradient(ellipse at 75% 80%, rgba(249,115,22,0.04) 0%, transparent 50%),
+        var(--bg);
+    }
+    .auth-card   { width: 100%; max-width: 420px; }
+    .auth-logo   { font-family: var(--disp); font-size: 44px; letter-spacing: 3px; color: var(--accent); margin-bottom: 2px; }
+    .auth-tagline{ font-family: var(--mono); font-size: 12px; color: var(--text-dim); margin-bottom: 36px; }
+    .auth-tabs   { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .auth-tab    {
+      padding: 10px 20px; background: none; border: none;
+      color: var(--text-muted); font-family: var(--sans); font-size: 14px; font-weight: 600;
+      cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s;
+    }
+    .auth-tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── FORMS ─────────────────────────────────────────────── */
+    .form-group  { margin-bottom: 16px; }
+    label {
+      display: block; font-size: 11px; font-weight: 700;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: .09em; margin-bottom: 6px;
+    }
+    input, select, textarea {
+      width: 100%; padding: 10px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); color: var(--text);
+      font-family: var(--sans); font-size: 14px;
+      outline: none; transition: border-color .15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    select option { background: var(--surface2); }
+    textarea { resize: vertical; min-height: 80px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .pace-hint { font-size: 11px; color: var(--text-dim); margin-top: 4px; font-family: var(--mono); }
+    input[type="date"]::-webkit-calendar-picker-indicator { filter: invert(.5); cursor: pointer; }
+    input[type="checkbox"] { width: auto; accent-color: var(--accent); cursor: pointer; }
+
+    /* Multi-athlete selector */
+    .multi-list {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--r); max-height: 160px; overflow-y: auto; padding: 4px;
+    }
+    .multi-list-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 7px 8px; border-radius: 6px; cursor: pointer; transition: background .1s;
+    }
+    .multi-list-item:hover { background: var(--surface2); }
+    .multi-list-item label { margin: 0; font-size: 13px; font-weight: 500; text-transform: none; letter-spacing: 0; color: var(--text); cursor: pointer; }
+    .multi-list-empty { padding: 10px 8px; font-size: 13px; color: var(--text-dim); }
+    .multi-list-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+
+    /* ── BUTTONS ─────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      gap: 8px; padding: 10px 18px; border-radius: var(--r);
+      font-family: var(--sans); font-size: 14px; font-weight: 600;
+      cursor: pointer; border: none; transition: all .15s;
+      white-space: nowrap; text-decoration: none; line-height: 1;
+    }
+    .btn-primary  { background: var(--accent); color: #fff; }
+    .btn-primary:hover { background: #ea6c0f; box-shadow: 0 0 20px var(--accent-glow); }
+    .btn-ghost    { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
+    .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+    .btn-danger   { background: rgba(239,68,68,.08); color: var(--danger); border: 1px solid rgba(239,68,68,.2); }
+    .btn-danger:hover { background: rgba(239,68,68,.15); }
+    .btn-sm       { padding: 6px 12px; font-size: 12px; }
+    .btn-xs       { padding: 4px 10px; font-size: 11px; }
+    .btn-full     { width: 100%; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── APP SHELL ─────────────────────────────────────────── */
+    #app { display: none; min-height: 100svh; }
+    .coach-layout { display: grid; grid-template-columns: 240px 1fr; min-height: 100svh; }
+
+    /* ── SIDEBAR ─────────────────────────────────────────────── */
+    .sidebar {
+      background: var(--surface); border-right: 1px solid var(--border);
+      display: flex; flex-direction: column;
+      position: sticky; top: 0; height: 100svh; z-index: 300;
+    }
+    .sidebar-logo { font-family: var(--disp); font-size: 28px; letter-spacing: 2px; color: var(--accent); padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-inner { padding: 12px; flex: 1; overflow-y: auto; }
+    .sidebar-heading { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--text-dim); padding: 8px 8px 6px; }
+    .roster-item { display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: var(--r); cursor: pointer; transition: background .1s; margin-bottom: 2px; }
+    .roster-item:hover { background: var(--surface2); }
+    .roster-item.active { background: var(--accent-dim); }
+    .roster-item.active .roster-name { color: var(--accent); }
+    .roster-name { font-size: 13px; font-weight: 500; }
+    .divider { height: 1px; background: var(--border); margin: 6px 0; }
+    .sidebar-footer { padding: 12px; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 6px; }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,.65); z-index: 299; }
+    .sidebar-overlay.open { display: block; }
+    .mobile-topbar {
+      display: none; background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 12px 16px; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 100;
+    }
+    .hamburger { background: none; border: none; color: var(--text); font-size: 22px; cursor: pointer; padding: 4px; line-height: 1; }
+
+    /* ── AVATAR ─────────────────────────────────────────────── */
+    .avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--surface2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--accent); flex-shrink: 0; font-family: var(--mono);
+    }
+    .av-sm { width: 22px; height: 22px; font-size: 8px; }
+
+    /* ── MAIN CONTENT ─────────────────────────────────────────── */
+    .main { padding: 28px 32px; min-height: 100svh; }
+    .page-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 24px; gap: 16px; flex-wrap: wrap; }
+    .page-title { font-family: var(--disp); font-size: 36px; letter-spacing: 1px; line-height: 1; margin-bottom: 4px; }
+    .page-sub { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+    .page-actions { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+    /* ── VIEW SWITCH ─────────────────────────────────────────── */
+    .view-switch { display: flex; gap: 0; background: var(--surface2); border-radius: var(--r); padding: 3px; }
+    .vs-btn { padding: 6px 14px; border-radius: 6px; background: none; border: none; color: var(--text-muted); font-family: var(--sans); font-size: 12px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .vs-btn.active { background: var(--surface); color: var(--text); }
+
+    /* ── TABS (athlete) ─────────────────────────────────────────── */
+    .view-tabs { display: flex; gap: 4px; margin-bottom: 20px; background: var(--surface); padding: 4px; border-radius: var(--r); width: fit-content; }
+    .view-tab { padding: 7px 16px; border-radius: 6px; background: none; border: none; color: var(--text-muted); font-family: var(--sans); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s; }
+    .view-tab.active { background: var(--surface2); color: var(--text); }
+
+    /* ── WEEK NAVIGATION ─────────────────────────────────────────── */
+    .week-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .week-label { font-family: var(--mono); font-size: 13px; color: var(--text); flex: 1; text-align: center; }
+    .week-arrow { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); border-radius: var(--r); padding: 6px 14px; cursor: pointer; font-size: 14px; font-family: var(--sans); font-weight: 600; transition: all .15s; }
+    .week-arrow:hover { border-color: var(--accent); color: var(--accent); }
+    .week-today-btn { background: var(--accent-dim); border: 1px solid rgba(249,115,22,.3); color: var(--accent); border-radius: var(--r); padding: 6px 14px; cursor: pointer; font-size: 12px; font-family: var(--sans); font-weight: 700; }
+
+    /* ── WEEK GRID ─────────────────────────────────────────── */
+    .week-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .week-grid { display: grid; grid-template-columns: repeat(7, minmax(140px, 1fr)); gap: 8px; min-width: 980px; }
+    .week-col { display: flex; flex-direction: column; gap: 6px; }
+    .week-col-hdr { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 8px 10px; text-align: center; }
+    .week-col-hdr.is-today { border-color: var(--accent); background: var(--accent-dim); }
+    .week-day-name { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin-bottom: 2px; }
+    .week-day-num  { font-family: var(--mono); font-size: 18px; font-weight: 700; }
+    .week-col-hdr.is-today .week-day-num { color: var(--accent); }
+    .week-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--border); border-radius: var(--r);
+      padding: 10px 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s;
+    }
+    .week-card:hover { border-left-color: var(--accent); box-shadow: 0 2px 12px rgba(0,0,0,.25); }
+    .week-card.wc-done { border-left-color: var(--success); opacity: .85; }
+    .week-card-title { font-size: 12px; font-weight: 600; margin: 5px 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .week-card-ath   { font-size: 11px; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .week-card-stats { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .week-card-done  { font-size: 10px; color: var(--success); font-weight: 700; margin-top: 4px; }
+
+    /* ── SESSION CARDS (list view) ─────────────────────────────── */
+    .sessions-grid { display: flex; flex-direction: column; gap: 12px; }
+    .session-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--border); border-radius: var(--rl);
+      padding: 18px 20px; transition: border-color .15s, box-shadow .15s;
+    }
+    .session-card:hover { border-left-color: var(--accent); box-shadow: 0 4px 24px rgba(0,0,0,.25); }
+    .session-card.done    { border-left-color: var(--success); opacity: .88; }
+    .session-card.is-today { border-left-color: var(--accent); background: linear-gradient(135deg, var(--surface) 0%, rgba(249,115,22,.04) 100%); }
+    .session-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+    .session-date { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
+    .done-badge   { font-size: 10px; color: var(--success); font-weight: 700; margin-left: auto; }
+    .session-title { font-size: 15px; font-weight: 600; margin-bottom: 6px; }
+    .session-desc  { font-size: 13px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.6; }
+    .stats-row     { display: flex; gap: 20px; flex-wrap: wrap; margin-top: 4px; }
+    .stat          { display: flex; flex-direction: column; gap: 2px; }
+    .stat-val      { font-family: var(--mono); font-size: 16px; font-weight: 700; }
+    .stat-lbl      { font-size: 10px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-dim); }
+    .coach-note    { margin-top: 10px; padding: 8px 12px; background: var(--surface2); border-radius: 6px; font-size: 12px; color: var(--text-muted); }
+    .coach-note-lbl{ font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px; }
+    .card-actions  { display: flex; gap: 8px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+    .athlete-tag   { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+    .athlete-tag-name { font-size: 12px; color: var(--text-muted); }
+
+    /* ── TYPE BADGES ─────────────────────────────────────────── */
+    .type-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; padding: 2px 8px; border-radius: 20px; font-family: var(--mono); }
+    .b-easy      { background: rgba(16,185,129,.12);  color: #10B981; }
+    .b-tempo     { background: rgba(249,115,22,.12);  color: var(--accent); }
+    .b-intervals { background: rgba(239,68,68,.12);   color: var(--danger); }
+    .b-long      { background: rgba(139,92,246,.12);  color: #8B5CF6; }
+    .b-recovery  { background: rgba(107,114,128,.12); color: #9CA3AF; }
+    .b-race      { background: rgba(251,191,36,.12);  color: var(--warning); }
+    .b-strength  { background: rgba(59,130,246,.12);  color: #3B82F6; }
+    .b-cross     { background: rgba(20,184,166,.12);  color: #14B8A6; }
+
+    /* ── LOG PANEL ─────────────────────────────────────────── */
+    .log-panel {
+      background: var(--success-dim); border: 1px solid rgba(16,185,129,.2);
+      border-radius: var(--r); padding: 12px; margin-top: 12px;
+    }
+    .log-panel-hdr { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--success); margin-bottom: 8px; }
+    .log-stats { display: flex; gap: 20px; flex-wrap: wrap; }
+    .log-stat-val { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--success); }
+
+    /* ── RACE CARDS ─────────────────────────────────────────── */
+    .race-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 3px solid var(--warning); border-radius: var(--rl);
+      padding: 18px 20px; transition: all .15s;
+    }
+    .race-card:hover { box-shadow: 0 4px 24px rgba(0,0,0,.25); }
+    .race-card.race-completed { border-left-color: var(--success); opacity: .88; }
+    .race-card.race-past { border-left-color: var(--text-dim); opacity: .7; }
+    .race-countdown { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--warning); }
+    .race-countdown.race-soon { color: var(--danger); }
+    .race-name { font-size: 16px; font-weight: 600; margin: 6px 0 4px; }
+    .race-meta { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
+    .race-target { margin-top: 8px; padding: 8px 12px; background: var(--surface2); border-radius: 6px; }
+    .race-target-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--warning); margin-bottom: 2px; }
+    .race-target-val { font-family: var(--mono); font-size: 15px; font-weight: 700; }
+    .races-section { margin-bottom: 28px; }
+    .races-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+
+    /* ── PROGRESS CHARTS ─────────────────────────────────────── */
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 16px; }
+    .chart-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--rl); padding: 20px;
+    }
+    .chart-card-full { grid-column: 1 / -1; }
+    .chart-title { font-family: var(--disp); font-size: 18px; letter-spacing: 1px; margin-bottom: 12px; }
+    .chart-empty { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
+
+    /* ── ATHLETE LAYOUT ─────────────────────────────────────────── */
+    .athlete-layout { max-width: 760px; margin: 0 auto; padding: 28px 24px; }
+    .athlete-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28px; gap: 12px; flex-wrap: wrap; }
+    .stats-strip { display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px; margin-bottom: 24px; }
+    .stats-tile { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r); padding: 16px; }
+    .stats-tile-val { font-family: var(--mono); font-size: 26px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+    .stats-tile-lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--text-muted); }
+
+    /* ── MODAL ─────────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.75); backdrop-filter: blur(4px);
+      z-index: 1000; align-items: center; justify-content: center; padding: 20px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl); width: 100%; max-width: 520px; max-height: 92svh; overflow-y: auto; padding: 28px; }
+    .modal-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+    .modal-title { font-family: var(--disp); font-size: 28px; letter-spacing: 1px; }
+    .modal-close { background: none; border: none; color: var(--text-muted); font-size: 18px; cursor: pointer; padding: 4px; line-height: 1; }
+    .modal-close:hover { color: var(--text); }
+    .modal-note { font-size: 13px; color: var(--text-muted); line-height: 1.6; margin-bottom: 20px; }
+    #m-detail .modal { max-width: 560px; }
+
+    /* ── EMPTY STATE ─────────────────────────────────────────── */
+    .empty-state { text-align: center; padding: 56px 20px; }
+    .empty-icon  { font-size: 44px; margin-bottom: 14px; opacity: .25; }
+    .empty-title { font-family: var(--disp); font-size: 22px; letter-spacing: 1px; margin-bottom: 6px; }
+    .empty-sub   { color: var(--text-muted); font-size: 13px; }
+
+    /* ── TOAST ─────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 12px 18px;
+      font-size: 13px; font-weight: 500; z-index: 2000;
+      transform: translateY(80px); opacity: 0; transition: all .3s;
+      max-width: calc(100vw - 48px);
+    }
+    .toast.show  { transform: translateY(0); opacity: 1; }
+    .toast.ok    { border-color: var(--success); color: var(--success); }
+    .toast.err   { border-color: var(--danger);  color: var(--danger);  }
+    .toast.warn  { border-color: var(--warning); color: var(--warning); }
+
+    /* ── STAR RATING ─────────────────────────────────────────── */
+    .star { font-size: 26px; cursor: pointer; color: var(--border); transition: color .1s; }
+    .star.on, .star:hover { color: var(--warning); }
+
+    /* ── MISC ─────────────────────────────────────────── */
+    .err-msg { color: var(--danger);  font-size: 12px; margin-top: 8px; }
+    .suc-msg { color: var(--success); font-size: 12px; margin-top: 8px; }
+    .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .section-heading { font-family: var(--disp); font-size: 22px; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+
+    /* ── RESPONSIVE ─────────────────────────────────────────── */
+    @media (max-width: 768px) {
+      .coach-layout { grid-template-columns: 1fr; }
+      .sidebar {
+        position: fixed; left: -260px; top: 0; bottom: 0;
+        width: 240px; height: 100svh;
+        transition: left .25s ease; z-index: 300;
+      }
+      .sidebar.open { left: 0; }
+      .mobile-topbar { display: flex; }
+      .main { padding: 16px; }
+      .form-row { grid-template-columns: 1fr; }
+      .page-header { flex-direction: column; align-items: stretch; }
+      .page-actions { width: 100%; }
+      .page-actions .btn { flex: 1; }
+      .athlete-layout { padding: 16px; }
+      .modal { padding: 20px; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .races-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ══════════════════ AUTH SCREEN ══════════════════ -->
+<div id="auth-screen">
+  <div class="auth-card">
+    <div class="auth-logo">PACECOACH</div>
+    <div class="auth-tagline">// athlete training platform</div>
+
+    <div class="auth-tabs">
+      <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
+      <button class="auth-tab" onclick="switchAuthTab('register')">Create Account</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="tab-login">
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="l-email" placeholder="you@example.com" onkeydown="if(event.key==='Enter')handleLogin()" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="l-pass" placeholder="••••••••" onkeydown="if(event.key==='Enter')handleLogin()" />
+      </div>
+      <div id="l-err" class="err-msg"></div>
+      <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="handleLogin()" id="l-btn">Sign In</button>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="tab-register" style="display:none">
+      <div class="form-group">
+        <label>Full Name</label>
+        <input type="text" id="r-name" placeholder="Your name" />
+      </div>
+      <div class="form-group">
+        <label>Email</label>
+        <input type="email" id="r-email" placeholder="you@example.com" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" id="r-pass" placeholder="Min. 6 characters" />
+      </div>
+      <div class="form-group">
+        <label>I am a...</label>
+        <select id="r-role">
+          <option value="athlete">Athlete</option>
+          <option value="coach">Coach</option>
+        </select>
+      </div>
+      <div id="r-err" class="err-msg"></div>
+      <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="handleRegister()" id="r-btn">Create Account</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════ MAIN APP ══════════════════ -->
+<div id="app"></div>
+
+<!-- ══════════════════ MODALS ══════════════════ -->
+
+<!-- Create / Edit Session -->
+<div class="modal-overlay" id="m-session">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title">NEW SESSION</div>
+      <button class="modal-close" onclick="closeModal('m-session')">✕</button>
+    </div>
+    <div class="form-group">
+      <div class="multi-list-header">
+        <label style="margin:0">Athletes</label>
+        <button class="btn btn-xs btn-ghost" onclick="toggleSelectAll('s-ath-list')">Select All</button>
+      </div>
+      <div class="multi-list" id="s-ath-list">
+        <div class="multi-list-empty">No athletes in roster yet.</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Session Title</label>
+      <input type="text" id="s-title" placeholder="e.g. Tuesday Tempo Run" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Type</label>
+        <select id="s-type">
+          <option value="easy">Easy Run</option>
+          <option value="tempo">Tempo</option>
+          <option value="intervals">Intervals</option>
+          <option value="long">Long Run</option>
+          <option value="recovery">Recovery</option>
+          <option value="race">Race</option>
+          <option value="strength">Strength</option>
+          <option value="cross">Cross Training</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Date</label>
+        <input type="date" id="s-date" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Workout Description</label>
+      <textarea id="s-desc" placeholder="e.g. 10 min warm-up · 4×1km @ threshold pace · 10 min cool-down"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Target Distance (km)</label>
+        <input type="number" id="s-dist" placeholder="e.g. 10" step="0.1" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Target Duration (min)</label>
+        <input type="number" id="s-dur" placeholder="e.g. 60" min="0" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Target Pace (min/km)</label>
+        <input type="text" id="s-pace" placeholder="e.g. 4:30" />
+        <div class="pace-hint">Format: MM:SS</div>
+      </div>
+      <div class="form-group">
+        <label>HR Zone / RPE</label>
+        <input type="text" id="s-hr" placeholder="e.g. Zone 2 / RPE 6" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Notes (visible to athlete)</label>
+      <textarea id="s-notes" placeholder="Any context, focus points or reminders..." style="min-height:60px"></textarea>
+    </div>
+    <div id="s-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-session')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleCreateSession()" id="s-btn">Create Session</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Athlete -->
+<div class="modal-overlay" id="m-athlete">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">ADD ATHLETE</div>
+      <button class="modal-close" onclick="closeModal('m-athlete')">✕</button>
+    </div>
+    <p class="modal-note">Enter the athlete's email. They must have already registered a PaceCoach account with role <strong style="color:var(--text)">Athlete</strong>.</p>
+    <div class="form-group">
+      <label>Athlete Email</label>
+      <input type="email" id="a-email" placeholder="athlete@example.com" onkeydown="if(event.key==='Enter')handleAddAthlete()" />
+    </div>
+    <div id="a-err" class="err-msg"></div>
+    <div id="a-suc" class="suc-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-athlete')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleAddAthlete()" id="a-btn">Add Athlete</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Session (athlete) -->
+<div class="modal-overlay" id="m-log">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title" id="log-modal-title">LOG SESSION</div>
+      <button class="modal-close" onclick="closeModal('m-log')">✕</button>
+    </div>
+    <input type="hidden" id="log-sid" />
+    <div class="form-row">
+      <div class="form-group">
+        <label>Actual Distance (km)</label>
+        <input type="number" id="log-dist" placeholder="e.g. 10.2" step="0.1" min="0" />
+      </div>
+      <div class="form-group">
+        <label>Actual Duration (min)</label>
+        <input type="number" id="log-dur" placeholder="e.g. 58" min="0" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Effort Rating</label>
+      <div id="star-row" style="display:flex;gap:8px;margin-top:6px">
+        <span class="star" data-v="1" onclick="setRating(1)">★</span>
+        <span class="star" data-v="2" onclick="setRating(2)">★</span>
+        <span class="star" data-v="3" onclick="setRating(3)">★</span>
+        <span class="star" data-v="4" onclick="setRating(4)">★</span>
+        <span class="star" data-v="5" onclick="setRating(5)">★</span>
+      </div>
+      <input type="hidden" id="log-rating" value="0" />
+    </div>
+    <div class="form-group">
+      <label>Notes / How did it feel?</label>
+      <textarea id="log-notes" placeholder="How was it? Any aches, wins, surprises..."></textarea>
+    </div>
+    <div id="log-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-log')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleLogSession()" id="log-btn">Save Log</button>
+    </div>
+  </div>
+</div>
+
+<!-- Duplicate Session -->
+<div class="modal-overlay" id="m-dup">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title">DUPLICATE SESSION</div>
+      <button class="modal-close" onclick="closeModal('m-dup')">✕</button>
+    </div>
+    <p class="modal-note">Pick a new date and which athletes should receive this session. All other details are copied exactly.</p>
+    <div class="form-group">
+      <label>New Date</label>
+      <input type="date" id="dup-date" />
+    </div>
+    <div class="form-group">
+      <div class="multi-list-header">
+        <label style="margin:0">Assign To</label>
+        <button class="btn btn-xs btn-ghost" onclick="toggleSelectAll('dup-ath-list')">Select All</button>
+      </div>
+      <div class="multi-list" id="dup-ath-list"></div>
+    </div>
+    <div id="dup-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-dup')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleDuplicate()" id="dup-btn">Duplicate</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create Race (coach) -->
+<div class="modal-overlay" id="m-race">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">ADD RACE GOAL</div>
+      <button class="modal-close" onclick="closeModal('m-race')">✕</button>
+    </div>
+    <p class="modal-note">Set a goal race so you and your athlete are aligned on what you're building towards.</p>
+    <div class="form-group">
+      <div class="multi-list-header">
+        <label style="margin:0">Athlete</label>
+        <button class="btn btn-xs btn-ghost" onclick="toggleSelectAll('race-ath-list')">Select All</button>
+      </div>
+      <div class="multi-list" id="race-ath-list"></div>
+    </div>
+    <div class="form-group">
+      <label>Race Name</label>
+      <input type="text" id="race-name" placeholder="e.g. Manchester Marathon 2026" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Race Date</label>
+        <input type="date" id="race-date" />
+      </div>
+      <div class="form-group">
+        <label>Distance (km)</label>
+        <input type="number" id="race-dist" placeholder="e.g. 42.2" step="0.1" min="0" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Target Finish Time</label>
+      <input type="text" id="race-target" placeholder="e.g. 3:45:00 or 01:32:00" />
+      <div class="pace-hint">Format: HH:MM:SS or MM:SS</div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="race-notes" placeholder="Course profile, strategy notes, anything relevant..." style="min-height:60px"></textarea>
+    </div>
+    <div id="race-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-race')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleCreateRace()" id="race-btn">Add Race</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Race Result (athlete) -->
+<div class="modal-overlay" id="m-race-result">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <div class="modal-title">LOG RACE RESULT</div>
+      <button class="modal-close" onclick="closeModal('m-race-result')">✕</button>
+    </div>
+    <input type="hidden" id="rr-id" />
+    <div class="form-group">
+      <label>Finish Time</label>
+      <input type="text" id="rr-time" placeholder="e.g. 3:42:15" />
+    </div>
+    <div class="form-group">
+      <label>Status</label>
+      <select id="rr-status">
+        <option value="completed">Completed</option>
+        <option value="dns">DNS (Did Not Start)</option>
+        <option value="dnf">DNF (Did Not Finish)</option>
+      </select>
+    </div>
+    <div id="rr-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-race-result')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleLogRaceResult()" id="rr-btn">Save Result</button>
+    </div>
+  </div>
+</div>
+
+<!-- Session Detail (week view click) -->
+<div class="modal-overlay" id="m-detail">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title" id="detail-title">SESSION</div>
+      <button class="modal-close" onclick="closeModal('m-detail')">✕</button>
+    </div>
+    <div id="detail-body"></div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════════
+//  ⚠️  FILL IN YOUR SUPABASE PROJECT DETAILS
+//  supabase.com → your project → Settings → API
+// ══════════════════════════════════════════════════
+const SUPABASE_URL      = 'https://tnuibjibypylyynduyqc.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRudWliamlieXB5bHl5bmR1eXFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNTk5NjAsImV4cCI6MjA5MDczNTk2MH0.pWEHsrns8A2H8MhBpSoLLN80li_etamdQStER0OX_W4';
+
+// ══════════════════════════════════════════════════
+//  STATE
+// ══════════════════════════════════════════════════
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+let currentUser    = null;
+let currentProfile = null;
+let athletes       = [];
+let sessions       = [];
+let logs           = {};
+let races          = [];
+
+// View state
+let selectedAthId  = 'all';
+let athleteTab     = 'upcoming';
+let currentView    = 'list';        // 'list' | 'week' | 'progress'
+let weekStart      = getMonday(new Date());
+
+// Modal state
+let dupSourceId    = null;
+let currentRating  = 0;
+let sidebarOpen    = false;
+
+// Chart instances (so we can destroy before re-creating)
+let chartInstances = {};
+
+// ══════════════════════════════════════════════════
+//  DOM UTILS
+// ══════════════════════════════════════════════════
+const el  = id => document.getElementById(id);
+const val = id => el(id).value.trim();
+
+function setLoading(btn, loading, label) {
+  btn.disabled = loading;
+  btn.innerHTML = loading ? '<span class="spinner"></span>' : label;
+}
+
+// ══════════════════════════════════════════════════
+//  AUTH
+// ══════════════════════════════════════════════════
+function switchAuthTab(t) {
+  document.querySelectorAll('.auth-tab').forEach((tab, i) =>
+    tab.classList.toggle('active', (t === 'login' && i === 0) || (t === 'register' && i === 1)));
+  el('tab-login').style.display    = t === 'login'    ? 'block' : 'none';
+  el('tab-register').style.display = t === 'register' ? 'block' : 'none';
+}
+
+async function handleLogin() {
+  const email = val('l-email'), pass = val('l-pass');
+  const btn = el('l-btn'), errEl = el('l-err');
+  errEl.textContent = '';
+  if (!email || !pass) { errEl.textContent = 'Please fill in all fields.'; return; }
+  setLoading(btn, true);
+  const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+  setLoading(btn, false, 'Sign In');
+  if (error) errEl.textContent = error.message;
+}
+
+async function handleRegister() {
+  const name  = val('r-name'), email = val('r-email'),
+        pass  = val('r-pass'), role  = val('r-role');
+  const btn = el('r-btn'), errEl = el('r-err');
+  errEl.textContent = '';
+  if (!name || !email || !pass) { errEl.textContent = 'Please fill in all fields.'; return; }
+  if (pass.length < 6)          { errEl.textContent = 'Password must be at least 6 characters.'; return; }
+  setLoading(btn, true);
+  const { data, error } = await sb.auth.signUp({ email, password: pass });
+  if (error) { errEl.textContent = error.message; setLoading(btn, false, 'Create Account'); return; }
+  const { error: pe } = await sb.from('profiles')
+    .insert({ id: data.user.id, full_name: name, email: email.toLowerCase(), role });
+  if (pe) { errEl.textContent = pe.message; setLoading(btn, false, 'Create Account'); return; }
+  await sb.auth.signInWithPassword({ email, password: pass });
+}
+
+async function handleLogout() {
+  await sb.auth.signOut();
+  currentUser = currentProfile = null;
+  athletes = []; sessions = []; logs = {}; races = [];
+  el('app').style.display = 'none';
+  el('auth-screen').style.display = 'flex';
+}
+
+// ══════════════════════════════════════════════════
+//  DATA LOADING
+// ══════════════════════════════════════════════════
+async function loadAthletes() {
+  const { data } = await sb.from('coach_athletes')
+    .select('athlete_id, profiles!coach_athletes_athlete_id_fkey(id, full_name, email)')
+    .eq('coach_id', currentUser.id);
+  athletes = (data || []).map(r => r.profiles).filter(Boolean);
+}
+
+async function loadCoachSessions() {
+  let q = sb.from('sessions').select('*')
+    .eq('coach_id', currentUser.id)
+    .order('scheduled_date', { ascending: true });
+  if (selectedAthId !== 'all') q = q.eq('athlete_id', selectedAthId);
+  const { data } = await q;
+  sessions = data || [];
+  await loadLogs(sessions.map(s => s.id));
+}
+
+async function loadAthleteSessions() {
+  const { data } = await sb.from('sessions').select('*')
+    .eq('athlete_id', currentUser.id)
+    .order('scheduled_date', { ascending: true });
+  sessions = data || [];
+  await loadLogs(sessions.map(s => s.id));
+}
+
+async function loadLogs(ids) {
+  logs = {};
+  if (!ids.length) return;
+  const { data } = await sb.from('session_logs').select('*').in('session_id', ids);
+  (data || []).forEach(l => { logs[l.session_id] = l; });
+}
+
+async function loadRaces() {
+  const isCoach = currentProfile.role === 'coach';
+  let q = sb.from('races').select('*')
+    .order('race_date', { ascending: true });
+  if (isCoach) {
+    q = q.eq('coach_id', currentUser.id);
+    if (selectedAthId !== 'all') q = q.eq('athlete_id', selectedAthId);
+  } else {
+    q = q.eq('athlete_id', currentUser.id);
+  }
+  const { data } = await q;
+  races = data || [];
+}
+
+// ══════════════════════════════════════════════════
+//  COACH — ADD ATHLETE
+// ══════════════════════════════════════════════════
+async function handleAddAthlete() {
+  const email = val('a-email').toLowerCase();
+  const btn = el('a-btn'), errEl = el('a-err'), sucEl = el('a-suc');
+  errEl.textContent = ''; sucEl.textContent = '';
+  if (!email) { errEl.textContent = 'Please enter an email.'; return; }
+  setLoading(btn, true);
+  const { data: profile } = await sb.from('profiles')
+    .select('id, full_name, role').eq('email', email).maybeSingle();
+  if (!profile)                 { errEl.textContent = 'No PaceCoach account found with that email.'; setLoading(btn, false, 'Add Athlete'); return; }
+  if (profile.role !== 'athlete') { errEl.textContent = 'That account is registered as a coach.'; setLoading(btn, false, 'Add Athlete'); return; }
+  if (athletes.find(a => a.id === profile.id)) { errEl.textContent = 'Already in your roster.'; setLoading(btn, false, 'Add Athlete'); return; }
+  const { error } = await sb.from('coach_athletes').insert({ coach_id: currentUser.id, athlete_id: profile.id });
+  setLoading(btn, false, 'Add Athlete');
+  if (error) { errEl.textContent = error.message; return; }
+  sucEl.textContent = `✓ ${profile.full_name} added to your roster!`;
+  el('a-email').value = '';
+  await loadAthletes();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  COACH — CREATE SESSION (multi-athlete)
+// ══════════════════════════════════════════════════
+function openCreateSession() {
+  el('s-err').textContent = '';
+  ['s-title','s-desc','s-dist','s-dur','s-pace','s-hr','s-notes'].forEach(id => el(id).value = '');
+  el('s-date').value = todayStr();
+  el('s-type').value = 'easy';
+  populateAthleteCheckboxes('s-ath-list', selectedAthId !== 'all' ? [selectedAthId] : []);
+  openModal('m-session');
+}
+
+function populateAthleteCheckboxes(listId, preSelected = []) {
+  const list = el(listId);
+  if (!athletes.length) {
+    list.innerHTML = '<div class="multi-list-empty">Add athletes to your roster first.</div>';
+    return;
+  }
+  list.innerHTML = athletes.map(a => `
+    <div class="multi-list-item" onclick="toggleCheck('ath-${listId}-${a.id}')">
+      <input type="checkbox" id="ath-${listId}-${a.id}" value="${a.id}"
+        ${preSelected.includes(a.id) ? 'checked' : ''}
+        onclick="event.stopPropagation()" />
+      <div class="avatar av-sm">${initials(a.full_name)}</div>
+      <label for="ath-${listId}-${a.id}">${a.full_name}</label>
+    </div>`).join('');
+}
+
+function toggleCheck(cbId) {
+  const cb = el(cbId);
+  if (cb) cb.checked = !cb.checked;
+}
+
+function getChecked(listId) {
+  return Array.from(document.querySelectorAll(`#${listId} input[type="checkbox"]:checked`))
+    .map(cb => cb.value);
+}
+
+function toggleSelectAll(listId) {
+  const checkboxes = document.querySelectorAll(`#${listId} input[type="checkbox"]`);
+  const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+  checkboxes.forEach(cb => { cb.checked = !allChecked; });
+}
+
+async function handleCreateSession() {
+  const athleteIds = getChecked('s-ath-list');
+  const title = val('s-title'), type = val('s-type'), date = val('s-date'),
+        desc  = val('s-desc'),  dist = val('s-dist'),  dur  = val('s-dur'),
+        pace  = val('s-pace'),  hr   = val('s-hr'),    notes = val('s-notes');
+  const errEl = el('s-err'), btn = el('s-btn');
+  errEl.textContent = '';
+  if (!athleteIds.length) { errEl.textContent = 'Select at least one athlete.'; return; }
+  if (!title)              { errEl.textContent = 'Session title is required.'; return; }
+  if (!date)               { errEl.textContent = 'Please set a date.'; return; }
+
+  setLoading(btn, true);
+  const rows = athleteIds.map(aid => ({
+    coach_id: currentUser.id, athlete_id: aid,
+    title, session_type: type, scheduled_date: date,
+    description:    desc  || null,
+    distance_km:    dist  ? parseFloat(dist) : null,
+    duration_min:   dur   ? parseInt(dur)    : null,
+    pace_target:    pace  || null,
+    heart_rate_zone: hr   || null,
+    coach_notes:    notes || null,
+  }));
+
+  const { data: created, error } = await sb.from('sessions').insert(rows).select();
+  setLoading(btn, false, 'Create Session');
+  if (error) { errEl.textContent = error.message; return; }
+  closeModal('m-session');
+  toast(`${created.length} session${created.length > 1 ? 's' : ''} created ✓`, 'ok');
+  if (created) created.forEach(s => notifyAthlete(s));
+  await loadCoachSessions();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  COACH — DELETE SESSION
+// ══════════════════════════════════════════════════
+async function deleteSession(id) {
+  if (!confirm('Delete this session? This cannot be undone.')) return;
+  await sb.from('sessions').delete().eq('id', id);
+  toast('Session deleted');
+  closeModal('m-detail');
+  await loadCoachSessions();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  COACH — DUPLICATE SESSION
+// ══════════════════════════════════════════════════
+function openDuplicate(sessionId) {
+  dupSourceId = sessionId;
+  const src = sessions.find(s => s.id === sessionId);
+  const nextDay = addDays(new Date(src.scheduled_date + 'T00:00:00'), 1);
+  el('dup-date').value = dateStr(nextDay);
+  el('dup-err').textContent = '';
+  populateAthleteCheckboxes('dup-ath-list', [src.athlete_id]);
+  openModal('m-dup');
+}
+
+async function handleDuplicate() {
+  if (!dupSourceId) return;
+  const src        = sessions.find(s => s.id === dupSourceId);
+  const newDate    = val('dup-date');
+  const athleteIds = getChecked('dup-ath-list');
+  const errEl = el('dup-err'), btn = el('dup-btn');
+  errEl.textContent = '';
+  if (!newDate)           { errEl.textContent = 'Please choose a date.'; return; }
+  if (!athleteIds.length) { errEl.textContent = 'Select at least one athlete.'; return; }
+  setLoading(btn, true);
+
+  const rows = athleteIds.map(aid => ({
+    coach_id: currentUser.id, athlete_id: aid,
+    title: src.title, session_type: src.session_type, scheduled_date: newDate,
+    description: src.description, distance_km: src.distance_km,
+    duration_min: src.duration_min, pace_target: src.pace_target,
+    heart_rate_zone: src.heart_rate_zone, coach_notes: src.coach_notes,
+  }));
+
+  const { data: created, error } = await sb.from('sessions').insert(rows).select();
+  setLoading(btn, false, 'Duplicate');
+  if (error) { errEl.textContent = error.message; return; }
+  closeModal('m-dup');
+  toast(`Duplicated to ${created.length} athlete${created.length > 1 ? 's' : ''} ✓`, 'ok');
+  if (created) created.forEach(s => notifyAthlete(s));
+  await loadCoachSessions();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  RACES — CREATE (coach)
+// ══════════════════════════════════════════════════
+function openCreateRace() {
+  el('race-err').textContent = '';
+  ['race-name','race-dist','race-target','race-notes'].forEach(id => el(id).value = '');
+  el('race-date').value = '';
+  populateAthleteCheckboxes('race-ath-list', selectedAthId !== 'all' ? [selectedAthId] : []);
+  openModal('m-race');
+}
+
+async function handleCreateRace() {
+  const athleteIds = getChecked('race-ath-list');
+  const name = val('race-name'), date = val('race-date'),
+        dist = val('race-dist'), target = val('race-target'), notes = val('race-notes');
+  const errEl = el('race-err'), btn = el('race-btn');
+  errEl.textContent = '';
+  if (!athleteIds.length) { errEl.textContent = 'Select at least one athlete.'; return; }
+  if (!name)              { errEl.textContent = 'Race name is required.'; return; }
+  if (!date)              { errEl.textContent = 'Please set a race date.'; return; }
+
+  setLoading(btn, true);
+  const rows = athleteIds.map(aid => ({
+    coach_id: currentUser.id, athlete_id: aid,
+    race_name: name, race_date: date,
+    distance_km: dist ? parseFloat(dist) : null,
+    target_time: target || null, notes: notes || null,
+  }));
+  const { error } = await sb.from('races').insert(rows);
+  setLoading(btn, false, 'Add Race');
+  if (error) { errEl.textContent = error.message; return; }
+  closeModal('m-race');
+  toast('Race goal added ✓', 'ok');
+  await loadRaces();
+  renderApp();
+}
+
+async function deleteRace(id) {
+  if (!confirm('Remove this race goal?')) return;
+  await sb.from('races').delete().eq('id', id);
+  toast('Race removed');
+  await loadRaces();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  RACES — LOG RESULT (athlete)
+// ══════════════════════════════════════════════════
+function openRaceResult(raceId) {
+  el('rr-id').value = raceId;
+  const r = races.find(x => x.id === raceId);
+  el('rr-time').value = r?.actual_time || '';
+  el('rr-status').value = r?.status === 'upcoming' ? 'completed' : r?.status || 'completed';
+  el('rr-err').textContent = '';
+  openModal('m-race-result');
+}
+
+async function handleLogRaceResult() {
+  const raceId = el('rr-id').value;
+  const time = val('rr-time'), status = val('rr-status');
+  const errEl = el('rr-err'), btn = el('rr-btn');
+  errEl.textContent = '';
+  setLoading(btn, true);
+  const { error } = await sb.from('races').update({
+    actual_time: time || null, status,
+  }).eq('id', raceId);
+  setLoading(btn, false, 'Save Result');
+  if (error) { errEl.textContent = error.message; return; }
+  closeModal('m-race-result');
+  toast('Race result logged ✓', 'ok');
+  await loadRaces();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  ATHLETE — LOG SESSION (with pre-fill fix)
+// ══════════════════════════════════════════════════
+function openLogSession(sessionId) {
+  el('log-sid').value = sessionId;
+  el('log-err').textContent = '';
+  closeModal('m-detail');
+
+  // Pre-fill if editing an existing log
+  const existing = logs[sessionId];
+  if (existing) {
+    el('log-dist').value  = existing.actual_distance_km ?? '';
+    el('log-dur').value   = existing.actual_duration_min ?? '';
+    el('log-notes').value = existing.athlete_notes ?? '';
+    setRating(existing.rating ?? 0);
+    el('log-modal-title').textContent = 'EDIT LOG';
+  } else {
+    el('log-dist').value  = '';
+    el('log-dur').value   = '';
+    el('log-notes').value = '';
+    setRating(0);
+    el('log-modal-title').textContent = 'LOG SESSION';
+  }
+  openModal('m-log');
+}
+
+function setRating(v) {
+  currentRating = v;
+  el('log-rating').value = v;
+  document.querySelectorAll('.star').forEach(s =>
+    s.classList.toggle('on', parseInt(s.dataset.v) <= v && v > 0));
+}
+
+async function handleLogSession() {
+  const sessionId = el('log-sid').value,
+        dist  = val('log-dist'), dur   = val('log-dur'),
+        notes = val('log-notes');
+  const btn = el('log-btn'), errEl = el('log-err');
+  errEl.textContent = '';
+  setLoading(btn, true);
+  const { error } = await sb.from('session_logs').upsert({
+    session_id:          sessionId,
+    athlete_id:          currentUser.id,
+    actual_distance_km:  dist  ? parseFloat(dist) : null,
+    actual_duration_min: dur   ? parseInt(dur)    : null,
+    rating:              currentRating > 0 ? currentRating : null,
+    athlete_notes:       notes || null,
+    completed_at:        new Date().toISOString(),
+  }, { onConflict: 'session_id' });
+  setLoading(btn, false, 'Save Log');
+  if (error) { errEl.textContent = error.message; return; }
+  closeModal('m-log');
+  toast('Session logged ✓', 'ok');
+  if (currentProfile.role === 'coach') {
+    await loadCoachSessions();
+  } else {
+    await loadAthleteSessions();
+  }
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  EMAIL NOTIFICATIONS
+// ══════════════════════════════════════════════════
+async function notifyAthlete(session) {
+  try {
+    const athlete = athletes.find(a => a.id === session.athlete_id);
+    if (!athlete) return;
+    await sb.functions.invoke('notify-athlete', {
+      body: {
+        athleteEmail: athlete.email,
+        athleteName:  athlete.full_name,
+        coachName:    currentProfile.full_name,
+        session,
+      }
+    });
+  } catch (e) {
+    console.info('Email notification skipped:', e.message);
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  DATE & WEEK HELPERS
+// ══════════════════════════════════════════════════
+function getMonday(d) {
+  const date = new Date(d); date.setHours(0, 0, 0, 0);
+  const day = date.getDay();
+  date.setDate(date.getDate() + (day === 0 ? -6 : 1 - day));
+  return date;
+}
+function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
+function dateStr(d)    { return d.toISOString().split('T')[0]; }
+function todayStr()    { return dateStr(new Date()); }
+
+function weekLabel() {
+  const end = addDays(weekStart, 6);
+  const fmt = { day: 'numeric', month: 'short' };
+  return `${weekStart.toLocaleDateString('en-GB', fmt)} – ${end.toLocaleDateString('en-GB', { ...fmt, year: 'numeric' })}`;
+}
+function navigateWeek(delta) { weekStart = addDays(weekStart, delta * 7); renderApp(); }
+function goToToday()         { weekStart = getMonday(new Date()); renderApp(); }
+
+function getWeekSessions() {
+  const s = dateStr(weekStart), e = dateStr(addDays(weekStart, 6));
+  return sessions.filter(sess => sess.scheduled_date >= s && sess.scheduled_date <= e);
+}
+
+function daysUntil(dateStr) {
+  const d = new Date(dateStr + 'T00:00:00'), t = new Date(); t.setHours(0,0,0,0);
+  return Math.ceil((d - t) / 86400000);
+}
+
+// ══════════════════════════════════════════════════
+//  SIDEBAR (mobile)
+// ══════════════════════════════════════════════════
+function toggleSidebar() {
+  sidebarOpen = !sidebarOpen;
+  document.querySelector('.sidebar')?.classList.toggle('open', sidebarOpen);
+  document.querySelector('.sidebar-overlay')?.classList.toggle('open', sidebarOpen);
+}
+function closeSidebar() {
+  sidebarOpen = false;
+  document.querySelector('.sidebar')?.classList.remove('open');
+  document.querySelector('.sidebar-overlay')?.classList.remove('open');
+}
+
+// ══════════════════════════════════════════════════
+//  SESSION DETAIL MODAL
+// ══════════════════════════════════════════════════
+function openDetail(sessionId) {
+  const s = sessions.find(x => x.id === sessionId);
+  if (!s) return;
+  const log = logs[s.id];
+  el('detail-title').textContent = s.title.toUpperCase();
+  el('detail-body').innerHTML = detailBody(s, log);
+  openModal('m-detail');
+}
+
+function detailBody(s, log) {
+  const isCoach   = currentProfile.role === 'coach';
+  const athlete   = isCoach ? athletes.find(a => a.id === s.athlete_id) : null;
+  const completed = !!log;
+  return `
+    <div>
+      ${athlete ? `<div class="athlete-tag" style="margin-bottom:12px">
+        <div class="avatar av-sm">${initials(athlete.full_name)}</div>
+        <div class="athlete-tag-name">${athlete.full_name}</div>
+      </div>` : ''}
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+        <span class="session-date">${fmtDate(s.scheduled_date)}</span>
+        ${badge(s.session_type)}
+        ${completed ? '<span class="done-badge">✓ DONE</span>' : ''}
+      </div>
+      ${s.description ? `<div class="session-desc">${s.description}</div>` : ''}
+      ${statsRowHtml(s)}
+      ${s.coach_notes ? `<div class="coach-note" style="margin-top:12px"><div class="coach-note-lbl" style="color:${isCoach ? 'var(--text-dim)' : 'var(--accent)'}">Coach</div>${s.coach_notes}</div>` : ''}
+      ${logPanelHtml(log)}
+      <div class="card-actions" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
+        ${isCoach ? `
+          <button class="btn btn-ghost btn-sm" onclick="closeModal('m-detail');openDuplicate('${s.id}')">Duplicate</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>
+        ` : !completed ? `
+          <button class="btn btn-primary btn-sm" onclick="openLogSession('${s.id}')">Log This Session</button>
+        ` : `
+          <button class="btn btn-ghost btn-sm" onclick="openLogSession('${s.id}')">Edit Log</button>
+        `}
+      </div>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  RENDER HELPERS
+// ══════════════════════════════════════════════════
+const BADGE_MAP = {
+  easy: ['Easy Run','b-easy'], tempo: ['Tempo','b-tempo'],
+  intervals: ['Intervals','b-intervals'], long: ['Long Run','b-long'],
+  recovery: ['Recovery','b-recovery'], race: ['Race','b-race'],
+  strength: ['Strength','b-strength'], cross: ['Cross Training','b-cross'],
+};
+function badge(type) {
+  const [label, cls] = BADGE_MAP[type] || [type, 'b-recovery'];
+  return `<span class="type-badge ${cls}">${label}</span>`;
+}
+
+function fmtDate(ds) {
+  const d = new Date(ds + 'T00:00:00');
+  const t = new Date(); t.setHours(0,0,0,0);
+  const diff = Math.round((d - t) / 86400000);
+  const base = d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  if (diff === 0)  return `${base} · TODAY`;
+  if (diff === 1)  return `${base} · TOMORROW`;
+  if (diff === -1) return `${base} · YESTERDAY`;
+  return base;
+}
+function isToday(ds) {
+  const d = new Date(ds + 'T00:00:00'), t = new Date(); t.setHours(0,0,0,0);
+  return d.getTime() === t.getTime();
+}
+function initials(name) {
+  return name.split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+}
+function starsHtml(r) {
+  return Array.from({length:5}, (_,i) =>
+    `<span style="color:${i < r ? '#FBBF24' : 'var(--border)'}">★</span>`).join('');
+}
+function statsRowHtml(s) {
+  if (!s.distance_km && !s.duration_min && !s.pace_target && !s.heart_rate_zone) return '';
+  return `<div class="stats-row">
+    ${s.distance_km    ? `<div class="stat"><div class="stat-val">${s.distance_km}km</div><div class="stat-lbl">Distance</div></div>` : ''}
+    ${s.duration_min   ? `<div class="stat"><div class="stat-val">${s.duration_min}min</div><div class="stat-lbl">Duration</div></div>` : ''}
+    ${s.pace_target    ? `<div class="stat"><div class="stat-val">${s.pace_target}</div><div class="stat-lbl">Pace /km</div></div>` : ''}
+    ${s.heart_rate_zone ? `<div class="stat"><div class="stat-val" style="font-size:13px">${s.heart_rate_zone}</div><div class="stat-lbl">HR / RPE</div></div>` : ''}
+  </div>`;
+}
+function logPanelHtml(log) {
+  if (!log) return '';
+  return `<div class="log-panel">
+    <div class="log-panel-hdr">✓ Session Logged</div>
+    <div class="log-stats">
+      ${log.actual_distance_km  ? `<div class="stat"><div class="log-stat-val">${log.actual_distance_km}km</div><div class="stat-lbl">Actual Dist</div></div>` : ''}
+      ${log.actual_duration_min ? `<div class="stat"><div class="log-stat-val">${log.actual_duration_min}min</div><div class="stat-lbl">Actual Time</div></div>` : ''}
+      ${log.rating ? `<div class="stat"><div class="log-stat-val" style="display:flex;gap:1px">${starsHtml(log.rating)}</div><div class="stat-lbl">Rating</div></div>` : ''}
+    </div>
+    ${log.athlete_notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text-muted);font-style:italic">"${log.athlete_notes}"</div>` : ''}
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  RACE CARD
+// ══════════════════════════════════════════════════
+function raceCardHtml(r, { isCoach = false, showAthlete = false } = {}) {
+  const days = daysUntil(r.race_date);
+  const isPast = days < 0;
+  const isDone = r.status !== 'upcoming';
+  const athlete = showAthlete ? athletes.find(a => a.id === r.athlete_id) : null;
+  let countdownText;
+  if (isDone) {
+    const labels = { completed: '✓ COMPLETED', dns: 'DNS', dnf: 'DNF' };
+    countdownText = labels[r.status] || r.status;
+  } else if (days === 0) countdownText = 'RACE DAY';
+  else if (days === 1) countdownText = '1 DAY';
+  else if (days <= 7) countdownText = `${days} DAYS`;
+  else if (days <= 56) countdownText = `${Math.ceil(days/7)} WEEKS`;
+  else countdownText = `${days} DAYS`;
+
+  return `<div class="race-card ${isDone ? 'race-completed' : ''} ${isPast && !isDone ? 'race-past' : ''}">
+    ${athlete ? `<div class="athlete-tag" style="margin-bottom:8px"><div class="avatar av-sm">${initials(athlete.full_name)}</div><div class="athlete-tag-name">${athlete.full_name}</div></div>` : ''}
+    <div class="race-countdown ${days <= 14 && !isDone ? 'race-soon' : ''}" style="color:${isDone ? 'var(--success)' : ''}">${countdownText}</div>
+    <div class="race-name">${r.race_name}</div>
+    <div class="race-meta">${fmtDate(r.race_date)}${r.distance_km ? ` · ${r.distance_km}km` : ''}</div>
+    ${r.target_time ? `<div class="race-target"><div class="race-target-lbl">Target</div><div class="race-target-val">${r.target_time}</div></div>` : ''}
+    ${r.actual_time ? `<div class="race-target" style="border-left:2px solid var(--success)"><div class="race-target-lbl" style="color:var(--success)">Result</div><div class="race-target-val">${r.actual_time}</div></div>` : ''}
+    ${r.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text-muted)">${r.notes}</div>` : ''}
+    <div class="card-actions" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
+      ${isCoach ? `<button class="btn btn-danger btn-xs" onclick="deleteRace('${r.id}')">Remove</button>` : ''}
+      ${!isCoach && !isDone ? `<button class="btn btn-primary btn-sm" onclick="openRaceResult('${r.id}')">Log Result</button>` : ''}
+      ${!isCoach && isDone ? `<button class="btn btn-ghost btn-sm" onclick="openRaceResult('${r.id}')">Edit Result</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function raceSectionHtml(opts) {
+  const upcomingRaces = races.filter(r => r.status === 'upcoming');
+  const completedRaces = races.filter(r => r.status !== 'upcoming');
+  if (!races.length) return '';
+  return `<div class="races-section">
+    <div class="section-heading">RACE GOALS</div>
+    <div class="races-grid">
+      ${upcomingRaces.map(r => raceCardHtml(r, opts)).join('')}
+      ${completedRaces.map(r => raceCardHtml(r, opts)).join('')}
+    </div>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  PROGRESS CHARTS
+// ══════════════════════════════════════════════════
+function destroyCharts() {
+  Object.values(chartInstances).forEach(c => { try { c.destroy(); } catch(e){} });
+  chartInstances = {};
+}
+
+function getWeeklyData() {
+  // Group logged sessions by ISO week
+  const weekMap = {};
+  sessions.forEach(s => {
+    const log = logs[s.id];
+    if (!log) return;
+    const d = new Date(s.scheduled_date + 'T00:00:00');
+    const mon = getMonday(d);
+    const key = dateStr(mon);
+    if (!weekMap[key]) weekMap[key] = { km: 0, sessions: 0, totalRating: 0, ratingCount: 0, minPerKm: [] };
+    weekMap[key].km += (log.actual_distance_km || 0);
+    weekMap[key].sessions++;
+    if (log.rating) { weekMap[key].totalRating += log.rating; weekMap[key].ratingCount++; }
+    if (log.actual_distance_km && log.actual_duration_min) {
+      weekMap[key].minPerKm.push(log.actual_duration_min / log.actual_distance_km);
+    }
+  });
+  // Sort by week
+  const sorted = Object.entries(weekMap).sort((a,b) => a[0].localeCompare(b[0]));
+  return sorted.map(([week, data]) => ({
+    week,
+    label: new Date(week + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
+    km: Math.round(data.km * 10) / 10,
+    sessions: data.sessions,
+    avgRating: data.ratingCount ? Math.round(data.totalRating / data.ratingCount * 10) / 10 : null,
+    avgPace: data.minPerKm.length ? data.minPerKm.reduce((a,b) => a+b, 0) / data.minPerKm.length : null,
+  }));
+}
+
+function renderProgressCharts(containerId) {
+  const data = getWeeklyData();
+  const container = el(containerId);
+  if (!container) return;
+
+  if (data.length < 2) {
+    container.innerHTML = `<div class="chart-empty">Log more sessions to see your progress charts. You need at least 2 weeks of data.</div>`;
+    return;
+  }
+
+  destroyCharts();
+  const last12 = data.slice(-12);
+  const chartOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { grid: { color: 'rgba(42,47,64,0.5)' }, ticks: { color: '#6B7280', font: { family: "'Space Mono', monospace", size: 10 } } },
+      y: { grid: { color: 'rgba(42,47,64,0.5)' }, ticks: { color: '#6B7280', font: { family: "'Space Mono', monospace", size: 10 } } },
+    }
+  };
+
+  container.innerHTML = `
+    <div class="chart-card chart-card-full"><div class="chart-title">WEEKLY DISTANCE</div><div style="height:220px"><canvas id="ch-dist"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">AVG EFFORT</div><div style="height:200px"><canvas id="ch-effort"></canvas></div></div>
+    <div class="chart-card"><div class="chart-title">AVG PACE</div><div style="height:200px"><canvas id="ch-pace"></canvas></div></div>
+  `;
+
+  // Distance bar chart
+  chartInstances.dist = new Chart(el('ch-dist'), {
+    type: 'bar',
+    data: {
+      labels: last12.map(d => d.label),
+      datasets: [{
+        data: last12.map(d => d.km),
+        backgroundColor: 'rgba(249,115,22,0.7)',
+        borderColor: '#F97316',
+        borderWidth: 1, borderRadius: 4,
+      }]
+    },
+    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, beginAtZero: true, title: { display: true, text: 'km', color: '#4B5563' } } } }
+  });
+
+  // Effort line chart
+  const effortData = last12.filter(d => d.avgRating !== null);
+  chartInstances.effort = new Chart(el('ch-effort'), {
+    type: 'line',
+    data: {
+      labels: effortData.map(d => d.label),
+      datasets: [{
+        data: effortData.map(d => d.avgRating),
+        borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.1)',
+        fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#FBBF24',
+      }]
+    },
+    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, min: 1, max: 5, title: { display: true, text: '/ 5', color: '#4B5563' } } } }
+  });
+
+  // Pace line chart
+  const paceData = last12.filter(d => d.avgPace !== null);
+  chartInstances.pace = new Chart(el('ch-pace'), {
+    type: 'line',
+    data: {
+      labels: paceData.map(d => d.label),
+      datasets: [{
+        data: paceData.map(d => Math.round(d.avgPace * 100) / 100),
+        borderColor: '#10B981', backgroundColor: 'rgba(16,185,129,0.1)',
+        fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#10B981',
+      }]
+    },
+    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, reverse: true, title: { display: true, text: 'min/km', color: '#4B5563' } } } }
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  LIST & WEEK CARDS
+// ══════════════════════════════════════════════════
+function listCard(s, { showAthlete = false, isCoach = false } = {}) {
+  const log = logs[s.id], completed = !!log, today = isToday(s.scheduled_date);
+  const athlete = showAthlete ? athletes.find(a => a.id === s.athlete_id) : null;
+  return `<div class="session-card ${completed ? 'done' : ''} ${today ? 'is-today' : ''}">
+    ${athlete ? `<div class="athlete-tag">
+      <div class="avatar av-sm">${initials(athlete.full_name)}</div>
+      <div class="athlete-tag-name">${athlete.full_name}</div>
+      ${completed ? `<span class="done-badge" style="margin-left:auto">✓ LOGGED</span>` : ''}
+    </div>` : completed ? `<div style="text-align:right;margin-bottom:6px;font-size:10px;color:var(--success);font-weight:700">✓ LOGGED</div>` : ''}
+    <div class="session-top">
+      <span class="session-date">${fmtDate(s.scheduled_date)}</span>
+      ${badge(s.session_type)}
+      ${!showAthlete && completed ? '<span class="done-badge">✓ DONE</span>' : ''}
+    </div>
+    <div class="session-title">${s.title}</div>
+    ${s.description ? `<div class="session-desc">${s.description}</div>` : ''}
+    ${statsRowHtml(s)}
+    ${s.coach_notes ? `<div class="coach-note"><div class="coach-note-lbl" style="color:${isCoach ? 'var(--text-dim)' : 'var(--accent)'}">Coach</div>${s.coach_notes}</div>` : ''}
+    ${logPanelHtml(log)}
+    <div class="card-actions">
+      ${isCoach ? `
+        <button class="btn btn-ghost btn-sm" onclick="openDuplicate('${s.id}')">Duplicate</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>
+      ` : !completed ? `
+        <button class="btn btn-primary btn-sm" onclick="openLogSession('${s.id}')">Log This Session</button>
+      ` : `
+        <button class="btn btn-ghost btn-sm" onclick="openLogSession('${s.id}')">Edit Log</button>
+      `}
+    </div>
+  </div>`;
+}
+
+function weekCard(s, showAthlete = false) {
+  const log = logs[s.id];
+  const athlete = showAthlete ? athletes.find(a => a.id === s.athlete_id) : null;
+  const statParts = [
+    s.distance_km ? `${s.distance_km}km` : '',
+    s.duration_min ? `${s.duration_min}min` : '',
+  ].filter(Boolean).join(' · ');
+  return `<div class="week-card ${log ? 'wc-done' : ''}" onclick="openDetail('${s.id}')">
+    ${badge(s.session_type)}
+    <div class="week-card-title">${s.title}</div>
+    ${athlete ? `<div class="week-card-ath">${athlete.full_name}</div>` : ''}
+    ${statParts ? `<div class="week-card-stats">${statParts}</div>` : ''}
+    ${log ? `<div class="week-card-done">✓ Logged</div>` : ''}
+  </div>`;
+}
+
+function renderWeekGrid(sessionSubset, showAthlete = false) {
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+  const todayD = new Date(); todayD.setHours(0,0,0,0);
+  const cols = days.map(day => {
+    const ds = dateStr(day);
+    const dayLabel = day.toLocaleDateString('en-GB', { weekday: 'short' }).toUpperCase();
+    const dayNum = day.getDate();
+    const isT = day.getTime() === todayD.getTime();
+    const daySessions = sessionSubset.filter(s => s.scheduled_date === ds);
+    return `<div class="week-col">
+      <div class="week-col-hdr ${isT ? 'is-today' : ''}">
+        <div class="week-day-name">${dayLabel}</div>
+        <div class="week-day-num">${dayNum}</div>
+      </div>
+      ${daySessions.map(s => weekCard(s, showAthlete)).join('') || ''}
+    </div>`;
+  }).join('');
+  return `<div class="week-scroll"><div class="week-grid">${cols}</div></div>`;
+}
+
+function weekNavHtml() {
+  return `<div class="week-nav">
+    <button class="week-arrow" onclick="navigateWeek(-1)">← Prev</button>
+    <span class="week-label">${weekLabel()}</span>
+    <button class="week-arrow" onclick="navigateWeek(1)">Next →</button>
+    <button class="week-today-btn" onclick="goToToday()">Today</button>
+  </div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  RENDER — COACH VIEW
+// ══════════════════════════════════════════════════
+function renderCoachView() {
+  const loggedCount = Object.keys(logs).length;
+  const selName = selectedAthId === 'all'
+    ? 'All Athletes'
+    : athletes.find(a => a.id === selectedAthId)?.full_name || 'Sessions';
+
+  const rosterItems = athletes.map(a => `
+    <div class="roster-item ${selectedAthId === a.id ? 'active' : ''}"
+         onclick="selectAthlete('${a.id}')">
+      <div class="avatar">${initials(a.full_name)}</div>
+      <div class="roster-name">${a.full_name}</div>
+    </div>`).join('');
+
+  let content;
+  if (currentView === 'progress') {
+    content = `<div id="coach-charts" class="charts-grid"></div>`;
+  } else if (currentView === 'week') {
+    const ws = getWeekSessions();
+    content = weekNavHtml()
+      + (ws.length === 0
+        ? `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">NOTHING THIS WEEK</div><div class="empty-sub">No sessions scheduled for this week.</div></div>`
+        : renderWeekGrid(ws, selectedAthId === 'all'));
+  } else {
+    content = raceSectionHtml({ isCoach: true, showAthlete: selectedAthId === 'all' });
+    content += sessions.length === 0
+      ? `<div class="empty-state"><div class="empty-icon">🏃</div><div class="empty-title">NO SESSIONS</div><div class="empty-sub">${athletes.length === 0 ? 'Add an athlete first, then create sessions.' : 'Hit "+ New Session" to get started.'}</div></div>`
+      : `<div class="sessions-grid">${sessions.map(s => listCard(s, { showAthlete: selectedAthId === 'all', isCoach: true })).join('')}</div>`;
+  }
+
+  el('app').innerHTML = `
+    <div class="coach-layout">
+      <div class="sidebar ${sidebarOpen ? 'open' : ''}">
+        <div class="sidebar-logo">PACECOACH</div>
+        <div class="sidebar-inner">
+          <div class="sidebar-heading">Roster</div>
+          <div class="roster-item ${selectedAthId === 'all' ? 'active' : ''}" onclick="selectAthlete('all')">
+            <div class="avatar" style="background:var(--accent-dim)">ALL</div>
+            <div class="roster-name">All Athletes</div>
+          </div>
+          <div class="divider"></div>
+          ${rosterItems}
+          ${athletes.length === 0 ? `<div style="padding:8px;font-size:12px;color:var(--text-dim)">No athletes yet</div>` : ''}
+        </div>
+        <div class="sidebar-footer">
+          <button class="btn btn-ghost btn-sm btn-full" onclick="openAddAthlete()">+ Add Athlete</button>
+          <button class="btn btn-ghost btn-sm btn-full" style="color:var(--text-muted)" onclick="handleLogout()">Sign Out</button>
+        </div>
+      </div>
+      <div class="sidebar-overlay ${sidebarOpen ? 'open' : ''}" onclick="closeSidebar()"></div>
+      <div class="main">
+        <div class="mobile-topbar">
+          <div style="font-family:var(--disp);font-size:22px;letter-spacing:2px;color:var(--accent)">PACECOACH</div>
+          <button class="hamburger" onclick="toggleSidebar()">☰</button>
+        </div>
+        <div class="page-header">
+          <div>
+            <div class="page-title">${selName.toUpperCase()}</div>
+            <div class="page-sub">// ${sessions.length} sessions · ${loggedCount} logged${races.length ? ` · ${races.filter(r=>r.status==='upcoming').length} races` : ''}</div>
+          </div>
+          <div class="page-actions">
+            <div class="view-switch">
+              <button class="vs-btn ${currentView === 'list' ? 'active' : ''}" onclick="setView('list')">List</button>
+              <button class="vs-btn ${currentView === 'week' ? 'active' : ''}" onclick="setView('week')">Week</button>
+              <button class="vs-btn ${currentView === 'progress' ? 'active' : ''}" onclick="setView('progress')">Progress</button>
+            </div>
+            <button class="btn btn-ghost btn-sm" onclick="openCreateRace()" style="border-color:var(--warning);color:var(--warning)">+ Race</button>
+            <button class="btn btn-primary" onclick="openCreateSession()">+ New Session</button>
+          </div>
+        </div>
+        ${content}
+      </div>
+    </div>`;
+
+  if (currentView === 'progress') {
+    setTimeout(() => renderProgressCharts('coach-charts'), 0);
+  }
+}
+
+async function selectAthlete(id) {
+  selectedAthId = id;
+  sidebarOpen = false;
+  await loadCoachSessions();
+  await loadRaces();
+  renderApp();
+}
+
+function openAddAthlete() {
+  el('a-err').textContent = '';
+  el('a-suc').textContent = '';
+  openModal('m-athlete');
+}
+
+// ══════════════════════════════════════════════════
+//  RENDER — ATHLETE VIEW
+// ══════════════════════════════════════════════════
+function renderAthleteView() {
+  const todayD = new Date(); todayD.setHours(0,0,0,0);
+  const upcoming = sessions.filter(s => new Date(s.scheduled_date + 'T00:00:00') >= todayD);
+  const past     = sessions.filter(s => new Date(s.scheduled_date + 'T00:00:00') <  todayD).reverse();
+  const totalKm  = Object.values(logs).reduce((sum, l) => sum + (l.actual_distance_km || 0), 0);
+
+  // Streak: consecutive weeks with at least one logged session
+  const weeklyData = getWeeklyData();
+  let streak = 0;
+  const thisWeek = dateStr(getMonday(new Date()));
+  for (let i = weeklyData.length - 1; i >= 0; i--) {
+    const expectedWeek = dateStr(addDays(getMonday(new Date()), -(weeklyData.length - 1 - i) * 7));
+    if (weeklyData[i].week === thisWeek || i === weeklyData.length - 1) {
+      streak++;
+    } else {
+      // Check if it's consecutive
+      const prevExpected = dateStr(addDays(new Date(weeklyData[i+1]?.week + 'T00:00:00'), -7));
+      if (weeklyData[i].week === prevExpected) streak++;
+      else break;
+    }
+  }
+
+  let content;
+  if (currentView === 'progress') {
+    content = raceSectionHtml({ isCoach: false })
+      + `<div id="athlete-charts" class="charts-grid"></div>`;
+  } else if (currentView === 'week') {
+    const ws = getWeekSessions();
+    content = weekNavHtml()
+      + (ws.length === 0
+        ? `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">NOTHING THIS WEEK</div><div class="empty-sub">No sessions scheduled for this week.</div></div>`
+        : renderWeekGrid(ws, false));
+  } else {
+    const shown = athleteTab === 'upcoming' ? upcoming : past;
+    content = raceSectionHtml({ isCoach: false });
+    content += `
+      <div class="view-tabs">
+        <button class="view-tab ${athleteTab === 'upcoming' ? 'active' : ''}" onclick="switchAthleteTab('upcoming')">Upcoming</button>
+        <button class="view-tab ${athleteTab === 'past'     ? 'active' : ''}" onclick="switchAthleteTab('past')">Past</button>
+      </div>
+      ${shown.length === 0
+        ? `<div class="empty-state">
+            <div class="empty-icon">${athleteTab === 'upcoming' ? '📅' : '📋'}</div>
+            <div class="empty-title">NO ${athleteTab === 'upcoming' ? 'UPCOMING' : 'PAST'} SESSIONS</div>
+            <div class="empty-sub">${athleteTab === 'upcoming' ? 'Your coach will assign sessions soon.' : 'Completed sessions appear here.'}</div>
+           </div>`
+        : `<div class="sessions-grid">${shown.map(s => listCard(s, { isCoach: false })).join('')}</div>`}`;
+  }
+
+  el('app').innerHTML = `
+    <div class="athlete-layout">
+      <div class="athlete-header">
+        <div>
+          <div style="font-family:var(--disp);font-size:28px;letter-spacing:2px;color:var(--accent);margin-bottom:2px">PACECOACH</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">${currentProfile.full_name}</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
+      </div>
+
+      <div class="stats-strip">
+        <div class="stats-tile"><div class="stats-tile-val">${upcoming.length}</div><div class="stats-tile-lbl">Upcoming</div></div>
+        <div class="stats-tile"><div class="stats-tile-val">${Object.keys(logs).length}</div><div class="stats-tile-lbl">Logged</div></div>
+        <div class="stats-tile"><div class="stats-tile-val">${totalKm.toFixed(1)}</div><div class="stats-tile-lbl">Total km</div></div>
+        <div class="stats-tile"><div class="stats-tile-val" style="color:var(--warning)">${streak > 0 ? streak + 'w' : '—'}</div><div class="stats-tile-lbl">Streak</div></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px">
+        <div class="view-switch">
+          <button class="vs-btn ${currentView === 'list' ? 'active' : ''}" onclick="setView('list')">List</button>
+          <button class="vs-btn ${currentView === 'week' ? 'active' : ''}" onclick="setView('week')">Week</button>
+          <button class="vs-btn ${currentView === 'progress' ? 'active' : ''}" onclick="setView('progress')">Progress</button>
+        </div>
+      </div>
+
+      ${content}
+    </div>`;
+
+  if (currentView === 'progress') {
+    setTimeout(() => renderProgressCharts('athlete-charts'), 0);
+  }
+}
+
+function switchAthleteTab(tab) { athleteTab = tab; renderApp(); }
+function setView(v) { currentView = v; renderApp(); }
+
+// ══════════════════════════════════════════════════
+//  MODAL + TOAST
+// ══════════════════════════════════════════════════
+function openModal(id)  { el(id).classList.add('open'); }
+function closeModal(id) { el(id).classList.remove('open'); }
+
+document.querySelectorAll('.modal-overlay').forEach(o =>
+  o.addEventListener('click', e => { if (e.target === o) o.classList.remove('open'); }));
+
+let toastTimer;
+function toast(msg, type = 'ok') {
+  const t = el('toast');
+  t.textContent = msg;
+  t.className = `toast ${type} show`;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 3200);
+}
+
+// ══════════════════════════════════════════════════
+//  MAIN RENDER
+// ══════════════════════════════════════════════════
+function renderApp() {
+  destroyCharts();
+  if (!currentProfile) return;
+  if (currentProfile.role === 'coach') renderCoachView();
+  else renderAthleteView();
+}
+
+// ══════════════════════════════════════════════════
+//  BOOT
+// ══════════════════════════════════════════════════
+async function onSignIn(user) {
+  currentUser = user;
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  if (!profile) return;
+  currentProfile = profile;
+  el('auth-screen').style.display = 'none';
+  el('app').style.display = 'block';
+  if (profile.role === 'coach') {
+    await loadAthletes();
+    await loadCoachSessions();
+    await loadRaces();
+  } else {
+    await loadAthleteSessions();
+    await loadRaces();
+  }
+  renderApp();
+}
+
+async function boot() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) await onSignIn(session.user);
+
+  sb.auth.onAuthStateChange(async (event, session) => {
+    if (event === 'SIGNED_IN'  && session) await onSignIn(session.user);
+    if (event === 'SIGNED_OUT') {
+      el('app').style.display = 'none';
+      el('auth-screen').style.display = 'flex';
+    }
+  });
+}
+
+boot();
+</script>
+</body>
+</html>
