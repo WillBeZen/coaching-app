@@ -345,6 +345,34 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .section-heading { font-family: var(--disp); font-size: 22px; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
 
+    /* ── RECORDS / PB TABLE ─────────────────────────────────── */
+    .records-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl); padding: 20px; }
+    .records-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .records-table th {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--text-dim); padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .records-table td { padding: 10px 12px; border-bottom: 1px solid rgba(51,51,74,.4); vertical-align: middle; }
+    .records-table tr:last-child td { border-bottom: none; }
+    .records-table tr:hover td { background: var(--surface2); }
+    .pb-event { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text); }
+    .pb-time-cell { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--gold); }
+    .pb-time-cell.empty { color: var(--text-dim); font-size: 12px; }
+    .pb-date-cell { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
+    .pb-badge { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: .08em;
+      padding: 2px 6px; border-radius: 10px; font-family: var(--mono); vertical-align: middle; margin-left: 6px; }
+    .pb-badge-new { background: rgba(255,215,0,.15); color: var(--gold); border: 1px solid rgba(255,215,0,.4); }
+    .records-athlete-group { margin-bottom: 24px; }
+    .records-athlete-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+
+    /* ── REGISTRATION STEPS ──────────────────────────────────── */
+    .reg-step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .reg-step-num { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+    .pb-entry-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: start; }
+    .pb-remove { background: none; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; padding: 10px 4px; line-height: 1; }
+    .pb-remove:hover { color: var(--danger); }
+
     /* ── RESPONSIVE ─────────────────────────────────────────── */
     @media (max-width: 768px) {
       .coach-layout { grid-template-columns: 1fr; }
@@ -417,6 +445,22 @@
       </div>
       <div id="r-err" class="err-msg"></div>
       <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="handleRegister()" id="r-btn">Create Account</button>
+    </div>
+
+    <!-- STEP 2: Add PBs (athletes only, optional) -->
+    <div id="tab-pbs" style="display:none">
+      <div class="reg-step-header">
+        <div class="reg-step-num">STEP 2 OF 2 — OPTIONAL</div>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6">
+        Add your current personal bests. Your coach will see these. You can skip this and add them any time from the Records tab.
+      </p>
+      <div id="pb-reg-rows"></div>
+      <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="addPBRegRow()">+ Add PB</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" style="flex:1" onclick="skipRegistrationPBs()">Skip for now</button>
+        <button class="btn btn-primary" style="flex:1" onclick="handleSaveRegistrationPBs()" id="pb-reg-btn">Save & Start</button>
+      </div>
     </div>
   </div>
 </div>
@@ -616,9 +660,13 @@
         <input type="date" id="race-date" />
       </div>
       <div class="form-group">
-        <label id="race-dist-lbl">Distance (km)</label>
-        <input type="number" id="race-dist" placeholder="e.g. 42.2" step="0.1" min="0" />
+        <label>Event</label>
+        <select id="race-event" onchange="onRaceEventChange('race')"><option value="">Custom / Other</option></select>
       </div>
+    </div>
+    <div class="form-group">
+      <label id="race-dist-lbl">Distance (km)</label>
+      <input type="number" id="race-dist" placeholder="e.g. 42.2" step="0.1" min="0" />
     </div>
     <div class="form-group">
       <label>Target Finish Time</label>
@@ -683,9 +731,13 @@
         <input type="date" id="ar-date" />
       </div>
       <div class="form-group">
-        <label id="ar-dist-lbl">Distance (km)</label>
-        <input type="number" id="ar-dist" placeholder="e.g. 42.2" step="0.1" min="0" />
+        <label>Event</label>
+        <select id="ar-event" onchange="onRaceEventChange('ar')"><option value="">Custom / Other</option></select>
       </div>
+    </div>
+    <div class="form-group">
+      <label id="ar-dist-lbl">Distance (km)</label>
+      <input type="number" id="ar-dist" placeholder="e.g. 42.2" step="0.1" min="0" />
     </div>
     <div class="form-group">
       <label>Target Finish Time</label>
@@ -700,6 +752,47 @@
     <div style="display:flex;gap:10px;margin-top:8px">
       <button class="btn btn-ghost" onclick="closeModal('m-athlete-race')">Cancel</button>
       <button class="btn btn-primary" style="flex:1" onclick="handleAthleteCreateRace()" id="ar-btn">Add Race</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit / Add Personal Best (athlete) -->
+<div class="modal-overlay" id="m-edit-pb">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title" id="pb-modal-title">EDIT PB</div>
+      <button class="modal-close" onclick="closeModal('m-edit-pb')">✕</button>
+    </div>
+    <input type="hidden" id="pb-event-hidden" />
+    <div class="form-group">
+      <label>Event</label>
+      <select id="pb-event"><option value="">Select event...</option></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>PB Time</label>
+        <input type="text" id="pb-pb-time" placeholder="e.g. 3:45:00" />
+      </div>
+      <div class="form-group">
+        <label>PB Date</label>
+        <input type="date" id="pb-pb-date" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Season Best (SB)</label>
+        <input type="text" id="pb-sb-time" placeholder="e.g. 3:50:00" />
+      </div>
+      <div class="form-group">
+        <label>SB Date</label>
+        <input type="date" id="pb-sb-date" />
+      </div>
+    </div>
+    <div id="pb-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-edit-pb')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="pb-delete-btn" onclick="deleteEditingPB()" style="display:none">Delete</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleSavePB()" id="pb-save-btn">Save</button>
     </div>
   </div>
 </div>
@@ -730,6 +823,35 @@ const SUPABASE_URL      = 'https://tnuibjibypylyynduyqc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRudWliamlieXB5bHl5bmR1eXFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNTk5NjAsImV4cCI6MjA5MDczNTk2MH0.pWEHsrns8A2H8MhBpSoLLN80li_etamdQStER0OX_W4';
 
 // ══════════════════════════════════════════════════
+//  STANDARD EVENTS
+// ══════════════════════════════════════════════════
+const STANDARD_EVENTS = [
+  { label: '800m',          distance_m: 800,   distance_km: 0.8     },
+  { label: '1500m',         distance_m: 1500,  distance_km: 1.5     },
+  { label: '3000m',         distance_m: 3000,  distance_km: 3.0     },
+  { label: '5000m',         distance_m: 5000,  distance_km: 5.0     },
+  { label: '10000m',        distance_m: 10000, distance_km: 10.0    },
+  { label: '5km',           distance_m: 5000,  distance_km: 5.0     },
+  { label: '10km',          distance_m: 10000, distance_km: 10.0    },
+  { label: '5 miles',       distance_m: 8047,  distance_km: 8.047   },
+  { label: '10 miles',      distance_m: 16093, distance_km: 16.093  },
+  { label: 'Half Marathon', distance_m: 21097, distance_km: 21.0975 },
+  { label: 'Marathon',      distance_m: 42195, distance_km: 42.195  },
+];
+
+function eventSelectOptions(selectedVal = '') {
+  return `<option value="">Custom / Other</option>
+    <optgroup label="Track">
+      ${['800m','1500m','3000m','5000m','10000m'].map(e =>
+        `<option value="${e}" ${selectedVal===e?'selected':''}>${e}</option>`).join('')}
+    </optgroup>
+    <optgroup label="Road">
+      ${['5km','10km','5 miles','10 miles','Half Marathon','Marathon'].map(e =>
+        `<option value="${e}" ${selectedVal===e?'selected':''}>${e}</option>`).join('')}
+    </optgroup>`;
+}
+
+// ══════════════════════════════════════════════════
 //  STATE
 // ══════════════════════════════════════════════════
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -740,6 +862,11 @@ let athletes       = [];
 let sessions       = [];
 let logs           = {};
 let races          = [];
+let personalBests  = [];
+
+// Temp storage during registration
+let pendingRegEmail = null;
+let pendingRegPass  = null;
 
 // View state
 let selectedAthId  = 'all';
@@ -808,7 +935,66 @@ async function handleRegister() {
   const { error: pe } = await sb.from('profiles')
     .insert({ id: data.user.id, full_name: name, email: email.toLowerCase(), role });
   if (pe) { errEl.textContent = pe.message; setLoading(btn, false, 'Create Account'); return; }
-  await sb.auth.signInWithPassword({ email, password: pass });
+  setLoading(btn, false, 'Create Account');
+
+  if (role === 'athlete') {
+    // Show optional PB entry step
+    pendingRegEmail = email;
+    pendingRegPass  = pass;
+    el('tab-register').style.display = 'none';
+    document.querySelector('.auth-tabs').style.display = 'none';
+    el('tab-pbs').style.display = 'block';
+    el('pb-reg-rows').innerHTML = '';
+    addPBRegRow();
+  } else {
+    await sb.auth.signInWithPassword({ email, password: pass });
+  }
+}
+
+function addPBRegRow() {
+  const row = document.createElement('div');
+  row.className = 'pb-entry-row';
+  row.innerHTML = `
+    <div class="form-group" style="margin:0">
+      <select class="pb-reg-event" style="font-size:13px">
+        ${eventSelectOptions()}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <input type="text" class="pb-reg-time" placeholder="e.g. 3:45:00" style="font-size:13px" />
+    </div>
+    <button class="pb-remove" onclick="this.parentElement.remove()">✕</button>
+  `;
+  el('pb-reg-rows').appendChild(row);
+}
+
+async function handleSaveRegistrationPBs() {
+  const btn = el('pb-reg-btn');
+  const rows = document.querySelectorAll('.pb-entry-row');
+  const entries = [];
+  rows.forEach(row => {
+    const event = row.querySelector('.pb-reg-event').value;
+    const time  = row.querySelector('.pb-reg-time').value.trim();
+    if (event && time) entries.push({ event, time });
+  });
+
+  setLoading(btn, true);
+  // Sign in first so we have auth context for the insert
+  const { data: signInData } = await sb.auth.signInWithPassword({ email: pendingRegEmail, password: pendingRegPass });
+  if (entries.length && signInData?.user) {
+    const rows = entries.map(e => {
+      const info = STANDARD_EVENTS.find(x => x.label === e.event);
+      return { athlete_id: signInData.user.id, event: e.event, distance_m: info?.distance_m || 0, pb_time: e.time, pb_date: todayStr() };
+    });
+    await sb.from('personal_bests').insert(rows);
+  }
+  setLoading(btn, false, 'Save & Start');
+  pendingRegEmail = pendingRegPass = null;
+}
+
+async function skipRegistrationPBs() {
+  await sb.auth.signInWithPassword({ email: pendingRegEmail, password: pendingRegPass });
+  pendingRegEmail = pendingRegPass = null;
 }
 
 async function handleLogout() {
@@ -817,6 +1003,13 @@ async function handleLogout() {
   athletes = []; sessions = []; logs = {}; races = [];
   el('app').style.display = 'none';
   el('auth-screen').style.display = 'flex';
+
+  // Stop any playing audio
+  const audio = el('ka-chow-sound');
+  if (audio) {
+    audio.pause();
+    audio.currentTime = 0;
+  }
 }
 
 // ══════════════════════════════════════════════════
@@ -871,6 +1064,129 @@ async function loadRaces() {
       .order('race_date', { ascending: true });
     races = data || [];
   }
+}
+
+async function loadPersonalBests() {
+  const isCoach = currentProfile.role === 'coach';
+  if (isCoach) {
+    const athIds = selectedAthId !== 'all' ? [selectedAthId] : athletes.map(a => a.id);
+    if (!athIds.length) { personalBests = []; return; }
+    const { data } = await sb.from('personal_bests').select('*')
+      .in('athlete_id', athIds).order('distance_m', { ascending: true });
+    personalBests = data || [];
+  } else {
+    const { data } = await sb.from('personal_bests').select('*')
+      .eq('athlete_id', currentUser.id).order('distance_m', { ascending: true });
+    personalBests = data || [];
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  PERSONAL BESTS — EDIT / SAVE / DELETE
+// ══════════════════════════════════════════════════
+function timeToSeconds(t) {
+  if (!t) return null;
+  const p = t.trim().split(':').map(Number);
+  if (p.length === 3) return p[0] * 3600 + p[1] * 60 + (p[2] || 0);
+  if (p.length === 2) return p[0] * 60 + (p[1] || 0);
+  return null;
+}
+
+function openEditPB(eventLabel) {
+  const existing = personalBests.find(p => p.event === eventLabel);
+  el('pb-modal-title').textContent = existing ? `EDIT: ${eventLabel}` : `ADD: ${eventLabel}`;
+  el('pb-event').innerHTML = eventSelectOptions(eventLabel);
+  el('pb-event-hidden').value = existing?.id || '';
+  el('pb-pb-time').value  = existing?.pb_time || '';
+  el('pb-pb-date').value  = existing?.pb_date || '';
+  el('pb-sb-time').value  = existing?.sb_time || '';
+  el('pb-sb-date').value  = existing?.sb_date || '';
+  el('pb-err').textContent = '';
+  el('pb-delete-btn').style.display = existing ? 'block' : 'none';
+  openModal('m-edit-pb');
+}
+
+function openAddPB() {
+  el('pb-modal-title').textContent = 'ADD PB';
+  el('pb-event').innerHTML = eventSelectOptions();
+  el('pb-event-hidden').value = '';
+  ['pb-pb-time','pb-pb-date','pb-sb-time','pb-sb-date'].forEach(id => el(id).value = '');
+  el('pb-err').textContent = '';
+  el('pb-delete-btn').style.display = 'none';
+  openModal('m-edit-pb');
+}
+
+async function handleSavePB() {
+  const eventVal  = el('pb-event').value;
+  const pbTime    = val('pb-pb-time'), pbDate = val('pb-pb-date');
+  const sbTime    = val('pb-sb-time'), sbDate = val('pb-sb-date');
+  const existingId = el('pb-event-hidden').value;
+  const errEl = el('pb-err'), btn = el('pb-save-btn');
+  errEl.textContent = '';
+  if (!eventVal)  { errEl.textContent = 'Please select an event.'; return; }
+  if (!pbTime && !sbTime) { errEl.textContent = 'Enter at least a PB or SB time.'; return; }
+
+  const info = STANDARD_EVENTS.find(e => e.label === eventVal);
+  const payload = {
+    athlete_id: currentUser.id, event: eventVal,
+    distance_m: info?.distance_m || 0,
+    pb_time: pbTime || null, pb_date: pbDate || null,
+    sb_time: sbTime || null, sb_date: sbDate || null,
+  };
+
+  setLoading(btn, true);
+  const { error } = existingId
+    ? await sb.from('personal_bests').update(payload).eq('id', existingId)
+    : await sb.from('personal_bests').upsert(payload, { onConflict: 'athlete_id,event' });
+  setLoading(btn, false, 'Save');
+  if (error) { errEl.textContent = error.message; return; }
+  closeModal('m-edit-pb');
+  toast('PB saved!', 'ok');
+  await loadPersonalBests();
+  renderApp();
+}
+
+async function deleteEditingPB() {
+  const id = el('pb-event-hidden').value;
+  if (!id || !confirm('Delete this PB record?')) return;
+  await sb.from('personal_bests').delete().eq('id', id);
+  closeModal('m-edit-pb');
+  toast('PB removed');
+  await loadPersonalBests();
+  renderApp();
+}
+
+async function checkAndUpdatePB(raceId, actualTime, status) {
+  if (status !== 'completed' || !actualTime) return;
+  const race = races.find(r => r.id === raceId);
+  if (!race?.event) return;
+
+  const newSecs = timeToSeconds(actualTime);
+  if (!newSecs) return;
+
+  const raceYear = new Date(race.race_date + 'T00:00:00').getFullYear();
+  const isSameSeason = raceYear === new Date().getFullYear();
+
+  const existing = personalBests.find(p => p.event === race.event);
+  const pbSecs = timeToSeconds(existing?.pb_time);
+  const sbSecs = timeToSeconds(existing?.sb_time);
+
+  const isNewPB = !pbSecs || newSecs < pbSecs;
+  const isNewSB = isSameSeason && (!sbSecs || newSecs < sbSecs);
+  if (!isNewPB && !isNewSB) return;
+
+  const info = STANDARD_EVENTS.find(e => e.label === race.event);
+  const updates = {
+    athlete_id: currentUser.id, event: race.event,
+    distance_m: info?.distance_m || 0,
+  };
+  if (isNewPB) { updates.pb_time = actualTime; updates.pb_date = race.race_date; updates.pb_race_id = raceId; }
+  if (isNewSB) { updates.sb_time = actualTime; updates.sb_date = race.race_date; updates.sb_race_id = raceId; }
+
+  await sb.from('personal_bests').upsert(updates, { onConflict: 'athlete_id,event' });
+  await loadPersonalBests();
+  if (isNewPB) toast(`🏆 NEW PB! ${race.event} — ${actualTime}`, 'ok');
+  else toast(`New Season Best! ${race.event} — ${actualTime}`, 'ok');
 }
 
 // ══════════════════════════════════════════════════
@@ -1032,11 +1348,29 @@ async function handleDuplicate() {
 // ══════════════════════════════════════════════════
 //  RACES — CREATE (coach)
 // ══════════════════════════════════════════════════
+function onRaceEventChange(prefix) {
+  const eventVal = el(`${prefix}-event`).value;
+  const found = STANDARD_EVENTS.find(e => e.label === eventVal);
+  const distInput = el(`${prefix}-dist`);
+  if (found) {
+    distInput.value = usesMiles ? displayDist(found.distance_km) : found.distance_km;
+    distInput.readOnly = true;
+    distInput.style.opacity = '.6';
+  } else {
+    distInput.value = '';
+    distInput.readOnly = false;
+    distInput.style.opacity = '1';
+  }
+}
+
 function openCreateRace() {
   el('race-err').textContent = '';
   ['race-name','race-dist','race-target','race-notes'].forEach(id => el(id).value = '');
   el('race-date').value = '';
   el('race-dist-lbl').textContent = `Distance (${distUnit()})`;
+  el('race-event').innerHTML = eventSelectOptions();
+  el('race-dist').readOnly = false;
+  el('race-dist').style.opacity = '1';
   populateAthleteCheckboxes('race-ath-list', selectedAthId !== 'all' ? [selectedAthId] : []);
   openModal('m-race');
 }
@@ -1052,9 +1386,10 @@ async function handleCreateRace() {
   if (!date)              { errEl.textContent = 'Please set a race date.'; return; }
 
   setLoading(btn, true);
+  const eventVal = val('race-event');
   const rows = athleteIds.map(aid => ({
     coach_id: currentUser.id, athlete_id: aid,
-    race_name: name, race_date: date,
+    race_name: name, race_date: date, event: eventVal || null,
     distance_km: dist ? Math.round((parseFloat(dist) / (usesMiles ? KM_TO_MI : 1)) * 100) / 100 : null,
     target_time: target || null, notes: notes || null,
   }));
@@ -1083,6 +1418,9 @@ function openAthleteRace() {
   ['ar-name','ar-dist','ar-target','ar-notes'].forEach(id => el(id).value = '');
   el('ar-date').value = '';
   el('ar-dist-lbl').textContent = `Distance (${distUnit()})`;
+  el('ar-event').innerHTML = eventSelectOptions();
+  el('ar-dist').readOnly = false;
+  el('ar-dist').style.opacity = '1';
   openModal('m-athlete-race');
 }
 
@@ -1095,9 +1433,10 @@ async function handleAthleteCreateRace() {
   if (!date) { errEl.textContent = 'Please set a race date.'; return; }
 
   setLoading(btn, true);
+  const eventVal = val('ar-event');
   const { error } = await sb.from('races').insert({
     coach_id: currentUser.id, athlete_id: currentUser.id,
-    race_name: name, race_date: date,
+    race_name: name, race_date: date, event: eventVal || null,
     distance_km: dist ? Math.round((parseFloat(dist) / (usesMiles ? KM_TO_MI : 1)) * 100) / 100 : null,
     target_time: target || null, notes: notes || null,
   });
@@ -1143,6 +1482,7 @@ async function handleLogRaceResult() {
   closeModal('m-race-result');
   toast('Result logged! Checkered flag!', 'ok');
   await loadRaces();
+  await checkAndUpdatePB(raceId, time, status);
   renderApp();
 }
 
@@ -1621,6 +1961,88 @@ function weekNavHtml() {
 }
 
 // ══════════════════════════════════════════════════
+//  RECORDS VIEW
+// ══════════════════════════════════════════════════
+function renderRecordsView(isCoach) {
+  if (isCoach) {
+    if (selectedAthId === 'all') {
+      // Group PBs by athlete
+      if (!athletes.length) return `<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-title">NO ATHLETES YET</div><div class="empty-sub">Add athletes to see their records.</div></div>`;
+      const athleteBlocks = athletes.map(a => {
+        const athPBs = personalBests.filter(p => p.athlete_id === a.id);
+        if (!athPBs.length) return `
+          <div class="records-athlete-group">
+            <div class="records-athlete-hdr">
+              <div class="avatar av-sm">${initials(a.full_name)}</div>
+              <div style="font-size:13px;font-weight:600">${a.full_name}</div>
+            </div>
+            <div style="font-size:12px;color:var(--text-dim);padding:8px 0">No records logged yet.</div>
+          </div>`;
+        return `
+          <div class="records-athlete-group">
+            <div class="records-athlete-hdr">
+              <div class="avatar av-sm">${initials(a.full_name)}</div>
+              <div style="font-size:13px;font-weight:600">${a.full_name}</div>
+            </div>
+            ${pbTableHtml(athPBs, false)}
+          </div>`;
+      }).join('');
+      return `<div class="section-heading">ATHLETE RECORDS</div>${athleteBlocks}`;
+    } else {
+      const athPBs = personalBests.filter(p => p.athlete_id === selectedAthId);
+      const ath = athletes.find(a => a.id === selectedAthId);
+      if (!athPBs.length) return `<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-title">NO RECORDS YET</div><div class="empty-sub">${ath?.full_name || 'This athlete'} hasn't logged any PBs yet.</div></div>`;
+      return `<div class="section-heading">RECORDS — ${(ath?.full_name || '').toUpperCase()}</div>${pbTableHtml(athPBs, false)}`;
+    }
+  } else {
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="section-heading" style="margin:0">MY RECORDS</div>
+        <button class="btn btn-ghost btn-sm" onclick="openAddPB()" style="border-color:var(--gold);color:var(--gold)">+ Add PB</button>
+      </div>
+      ${!personalBests.length
+        ? `<div class="empty-state"><div class="empty-icon">🏆</div><div class="empty-title">NO RECORDS YET</div><div class="empty-sub">Add your PBs manually or log a race result with a standard event to auto-record.</div></div>`
+        : pbTableHtml(personalBests, true)}
+    `;
+  }
+}
+
+function pbTableHtml(pbs, editable) {
+  const allEvents = STANDARD_EVENTS.map(e => e.label);
+  // Show all standard events; only render rows that have data OR if athlete (show all as editable)
+  const rows = editable
+    ? allEvents.map(ev => ({ ev, pb: pbs.find(p => p.event === ev) }))
+    : pbs.sort((a,b) => (a.distance_m||0) - (b.distance_m||0)).map(p => ({ ev: p.event, pb: p }));
+
+  return `
+    <div class="records-wrap">
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>PB</th>
+            <th>Date</th>
+            <th>Season Best</th>
+            <th>Date</th>
+            ${editable ? '<th></th>' : ''}
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(({ ev, pb }) => `
+            <tr>
+              <td class="pb-event">${ev}</td>
+              <td class="${pb?.pb_time ? 'pb-time-cell' : 'pb-time-cell empty'}">${pb?.pb_time || '—'}</td>
+              <td class="pb-date-cell">${pb?.pb_date ? new Date(pb.pb_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'}</td>
+              <td class="${pb?.sb_time ? 'pb-time-cell' : 'pb-time-cell empty'}" style="color:${pb?.sb_time ? 'var(--accent)' : ''}">${pb?.sb_time || '—'}</td>
+              <td class="pb-date-cell">${pb?.sb_date ? new Date(pb.sb_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'}</td>
+              ${editable ? `<td><button class="btn btn-ghost btn-xs" onclick="openEditPB('${ev}')">Edit</button></td>` : ''}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════
 //  RENDER — COACH VIEW
 // ══════════════════════════════════════════════════
 function renderCoachView() {
@@ -1645,6 +2067,8 @@ function renderCoachView() {
       + (ws.length === 0
         ? `<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-title">EMPTY TRACK</div><div class="empty-sub">No sessions scheduled this week. Time to hit the gas.</div></div>`
         : renderWeekGrid(ws, selectedAthId === 'all'));
+  } else if (currentView === 'records') {
+    content = renderRecordsView(true);
   } else {
     content = raceSectionHtml({ isCoach: true, showAthlete: selectedAthId === 'all' });
     content += sessions.length === 0
@@ -1687,6 +2111,7 @@ function renderCoachView() {
               <button class="vs-btn ${currentView === 'list' ? 'active' : ''}" onclick="setView('list')">List</button>
               <button class="vs-btn ${currentView === 'week' ? 'active' : ''}" onclick="setView('week')">Week</button>
               <button class="vs-btn ${currentView === 'progress' ? 'active' : ''}" onclick="setView('progress')">Progress</button>
+              <button class="vs-btn ${currentView === 'records' ? 'active' : ''}" onclick="setView('records')">Records</button>
             </div>
             <button class="btn btn-ghost btn-xs" onclick="toggleUnits()" style="font-family:var(--mono);font-size:11px">${usesMiles ? 'MI → KM' : 'KM → MI'}</button>
             <button class="btn btn-ghost btn-sm" onclick="openCreateRace()" style="border-color:var(--gold);color:var(--gold)">+ Race</button>
@@ -1707,6 +2132,7 @@ async function selectAthlete(id) {
   sidebarOpen = false;
   await loadCoachSessions();
   await loadRaces();
+  await loadPersonalBests();
   renderApp();
 }
 
@@ -1751,6 +2177,8 @@ function renderAthleteView() {
       + (ws.length === 0
         ? `<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-title">EMPTY TRACK</div><div class="empty-sub">No sessions this week. Rest up — race day is coming.</div></div>`
         : renderWeekGrid(ws, false));
+  } else if (currentView === 'records') {
+    content = renderRecordsView(false);
   } else {
     const shown = athleteTab === 'upcoming' ? upcoming : past;
     content = raceSectionHtml({ isCoach: false });
@@ -1790,6 +2218,7 @@ function renderAthleteView() {
           <button class="vs-btn ${currentView === 'list' ? 'active' : ''}" onclick="setView('list')">List</button>
           <button class="vs-btn ${currentView === 'week' ? 'active' : ''}" onclick="setView('week')">Week</button>
           <button class="vs-btn ${currentView === 'progress' ? 'active' : ''}" onclick="setView('progress')">Progress</button>
+          <button class="vs-btn ${currentView === 'records' ? 'active' : ''}" onclick="setView('records')">Records</button>
         </div>
         <div style="display:flex;gap:8px;align-items:center">
           <button class="btn btn-ghost btn-xs" onclick="toggleUnits()" style="font-family:var(--mono);font-size:11px">${usesMiles ? 'MI → KM' : 'KM → MI'}</button>
@@ -1858,9 +2287,11 @@ async function onSignIn(user) {
     await loadAthletes();
     await loadCoachSessions();
     await loadRaces();
+    await loadPersonalBests();
   } else {
     await loadAthleteSessions();
     await loadRaces();
+    await loadPersonalBests();
   }
   renderApp();
 }
