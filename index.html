@@ -366,6 +366,27 @@
     .records-athlete-group { margin-bottom: 24px; }
     .records-athlete-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 
+    /* ── MCQUEEN #95 BADGE ──────────────────────────────────── */
+    .badge-95 {
+      display: inline-flex; align-items: center; justify-content: center; gap: 1px;
+      background: linear-gradient(175deg, #FFD700 0%, #FF6B00 45%, #DC2626 100%);
+      color: #fff; font-family: var(--disp); font-weight: 900; letter-spacing: 1px;
+      border-radius: 5px; vertical-align: middle; line-height: 1;
+      box-shadow: 0 2px 8px rgba(220,38,38,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      position: relative; overflow: hidden;
+    }
+    .badge-95::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .badge-95-lg  { font-size: 22px; padding: 2px 10px 3px; }
+    .badge-95-md  { font-size: 16px; padding: 1px 7px 2px; }
+    .badge-95-sm  { font-size: 13px; padding: 1px 6px 2px; }
+    .badge-95-xs  { font-size: 11px; padding: 1px 5px 2px; }
+
     /* ── UNAVAILABILITY & EXTRA SESSIONS ─────────────────────── */
     .unavail-banner {
       background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);
@@ -416,7 +437,7 @@
 <!-- ══════════════════ AUTH SCREEN ══════════════════ -->
 <div id="auth-screen">
   <div class="auth-card">
-    <div class="auth-logo">PACECOACH <span style="background:var(--accent);color:#fff;padding:0 8px;border-radius:6px;font-size:24px;vertical-align:middle">95</span></div>
+    <div class="auth-logo">PACECOACH <span class="badge-95 badge-95-lg"><svg width="9" height="14" viewBox="0 0 9 14" fill="none" style="flex-shrink:0;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.3))"><polygon points="6,0 2,6 5,6 3,14 9,5 5.5,5" fill="rgba(255,255,255,0.9)"/></svg>95</span></div>
     <div class="auth-tagline">// speed. I am speed.</div>
 
     <div class="auth-tabs">
@@ -832,10 +853,16 @@
       <button class="modal-close" onclick="closeModal('m-unavailability')">✕</button>
     </div>
     <div class="form-group">
-      <label>Start Date</label>
-      <input type="date" id="unavail-start" />
+      <label>Date</label>
+      <input type="date" id="unavail-start" onchange="syncUnavailEnd()" />
     </div>
-    <div class="form-group">
+    <div class="form-group" style="margin-bottom:8px">
+      <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--text-muted)">
+        <input type="checkbox" id="unavail-multiday" onchange="toggleUnavailMultiday()" style="width:auto;margin:0" />
+        Multi-day period
+      </label>
+    </div>
+    <div class="form-group" id="unavail-end-group" style="display:none">
       <label>End Date</label>
       <input type="date" id="unavail-end" />
     </div>
@@ -1304,14 +1331,29 @@ async function checkAndUpdatePB(raceId, actualTime, status) {
 // ══════════════════════════════════════════════════
 //  ATHLETE — UNAVAILABILITY
 // ══════════════════════════════════════════════════
+function syncUnavailEnd() {
+  // Keep end date in sync with start if single-day (or end is empty)
+  if (!el('unavail-multiday').checked) {
+    el('unavail-end').value = el('unavail-start').value;
+  }
+}
+
+function toggleUnavailMultiday() {
+  const isMulti = el('unavail-multiday').checked;
+  el('unavail-end-group').style.display = isMulti ? 'block' : 'none';
+  if (!isMulti) el('unavail-end').value = el('unavail-start').value;
+}
+
 function openAddUnavailability() {
   editingUnavailId = null;
-  el('unavail-start').value = '';
-  el('unavail-end').value = '';
+  el('unavail-start').value = todayStr();
+  el('unavail-end').value = todayStr();
   el('unavail-reason').value = '';
   el('unavail-err').textContent = '';
   el('unavail-title').textContent = 'MARK UNAVAILABLE';
   el('unavail-delete-btn').style.display = 'none';
+  el('unavail-multiday').checked = false;
+  el('unavail-end-group').style.display = 'none';
   openModal('m-unavailability');
 }
 
@@ -1319,13 +1361,31 @@ function openEditUnavailability(id) {
   const u = unavailability.find(x => x.id === id);
   if (!u) return;
   editingUnavailId = id;
+  const isMulti = u.start_date !== u.end_date;
   el('unavail-start').value = u.start_date;
   el('unavail-end').value = u.end_date;
   el('unavail-reason').value = u.reason || '';
   el('unavail-err').textContent = '';
   el('unavail-title').textContent = 'EDIT UNAVAILABILITY';
   el('unavail-delete-btn').style.display = 'inline-block';
+  el('unavail-multiday').checked = isMulti;
+  el('unavail-end-group').style.display = isMulti ? 'block' : 'none';
   openModal('m-unavailability');
+}
+
+async function duplicateUnavailability(id) {
+  const u = unavailability.find(x => x.id === id);
+  if (!u) return;
+  const { error } = await sb.from('unavailability').insert({
+    athlete_id: currentUser.id,
+    start_date: u.start_date,
+    end_date: u.end_date,
+    reason: u.reason || null
+  });
+  if (error) { toast('Error duplicating: ' + error.message, 'err'); return; }
+  toast('✓ Unavailability duplicated — edit to change dates');
+  await loadUnavailability();
+  renderApp();
 }
 
 async function handleSaveUnavailability() {
@@ -2001,6 +2061,35 @@ function raceCardHtml(r, { isCoach = false, showAthlete = false } = {}) {
   </div>`;
 }
 
+function unavailSectionHtml(isCoach) {
+  const today = todayStr();
+  const upcoming = unavailability.filter(u => u.end_date >= today);
+  if (!upcoming.length) return '';
+  return `<div style="margin-bottom:16px">
+    <div class="section-heading" style="margin-bottom:8px">UNAVAILABLE PERIODS <span style="font-family:var(--mono);font-size:12px;color:var(--text-dim);font-weight:400;letter-spacing:0">${upcoming.length} upcoming</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${upcoming.map(u => {
+        const isSingle = u.start_date === u.end_date;
+        const ath = isCoach ? athletes.find(a => a.id === u.athlete_id) : null;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:var(--r);gap:12px">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0">
+            <span style="font-size:16px;flex-shrink:0">⊘</span>
+            <div>
+              ${ath ? `<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">${ath.full_name}</div>` : ''}
+              <div style="font-size:13px;font-weight:600;font-family:var(--mono);color:var(--danger)">${isSingle ? u.start_date : `${u.start_date} → ${u.end_date}`}</div>
+              ${u.reason ? `<div style="font-size:11px;color:var(--text-dim);margin-top:2px">${u.reason}</div>` : ''}
+            </div>
+          </div>
+          ${!isCoach ? `<div style="display:flex;gap:4px;flex-shrink:0">
+            <button class="btn btn-ghost btn-xs" onclick="openEditUnavailability('${u.id}')">Edit</button>
+            <button class="btn btn-ghost btn-xs" onclick="duplicateUnavailability('${u.id}')">Dup</button>
+          </div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+}
+
 function raceSectionHtml(opts) {
   const upcomingRaces = races.filter(r => r.status === 'upcoming');
   const completedRaces = races.filter(r => r.status !== 'upcoming');
@@ -2266,7 +2355,8 @@ function renderRecordsView(isCoach) {
                   ${u.reason ? `<div style="font-size:11px;color:var(--text-dim);margin-top:2px">${u.reason}</div>` : ''}
                 </div>
                 <div style="display:flex;gap:4px">
-                  <button class="btn btn-ghost btn-xs" onclick="openEditUnavailability('${u.id}')" style="color:var(--text-muted)">Edit</button>
+                  <button class="btn btn-ghost btn-xs" onclick="openEditUnavailability('${u.id}')">Edit</button>
+                  <button class="btn btn-ghost btn-xs" onclick="duplicateUnavailability('${u.id}')">Dup</button>
                 </div>
               </div>
             `).join('')}
@@ -2346,14 +2436,12 @@ function renderCoachView() {
     content = `<div id="coach-charts" class="charts-grid"></div>`;
   } else if (currentView === 'week') {
     const ws = getWeekSessions();
-    content = weekNavHtml()
-      + (ws.length === 0
-        ? `<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-title">EMPTY TRACK</div><div class="empty-sub">No sessions scheduled this week. Time to hit the gas.</div></div>`
-        : renderWeekGrid(ws, selectedAthId === 'all'));
+    content = weekNavHtml() + renderWeekGrid(ws, selectedAthId === 'all');
   } else if (currentView === 'records') {
     content = renderRecordsView(true);
   } else {
-    content = raceSectionHtml({ isCoach: true, showAthlete: selectedAthId === 'all' });
+    content = unavailSectionHtml(true);
+    content += raceSectionHtml({ isCoach: true, showAthlete: selectedAthId === 'all' });
     content += sessions.length === 0
       ? `<div class="empty-state"><div class="empty-icon">🏎️</div><div class="empty-title">NO SESSIONS YET</div><div class="empty-sub">${athletes.length === 0 ? 'Add a driver to your pit crew first.' : 'Ka-chow! Hit "+ New Session" to get rolling.'}</div></div>`
       : `<div class="sessions-grid">${sessions.map(s => listCard(s, { showAthlete: selectedAthId === 'all', isCoach: true })).join('')}</div>`;
@@ -2362,7 +2450,7 @@ function renderCoachView() {
   el('app').innerHTML = `
     <div class="coach-layout">
       <div class="sidebar ${sidebarOpen ? 'open' : ''}">
-        <div class="sidebar-logo">PACECOACH <span style="background:var(--accent);color:#fff;padding:0 4px;border-radius:4px;font-size:16px;vertical-align:middle">95</span></div>
+        <div class="sidebar-logo">PACECOACH <span class="badge-95 badge-95-sm"><svg width="6" height="10" viewBox="0 0 9 14" fill="none" style="flex-shrink:0"><polygon points="6,0 2,6 5,6 3,14 9,5 5.5,5" fill="rgba(255,255,255,0.9)"/></svg>95</span></div>
         <div class="sidebar-inner">
           <div class="sidebar-heading">Roster</div>
           <div class="roster-item ${selectedAthId === 'all' ? 'active' : ''}" onclick="selectAthlete('all')">
@@ -2381,7 +2469,7 @@ function renderCoachView() {
       <div class="sidebar-overlay ${sidebarOpen ? 'open' : ''}" onclick="closeSidebar()"></div>
       <div class="main">
         <div class="mobile-topbar">
-          <div style="font-family:var(--disp);font-size:22px;letter-spacing:2px;color:var(--accent)">PACECOACH <span style="background:var(--accent);color:#fff;padding:0 4px;border-radius:4px;font-size:14px;vertical-align:middle">95</span></div>
+          <div style="font-family:var(--disp);font-size:22px;letter-spacing:2px;color:var(--accent)">PACECOACH <span class="badge-95 badge-95-xs"><svg width="5" height="9" viewBox="0 0 9 14" fill="none" style="flex-shrink:0"><polygon points="6,0 2,6 5,6 3,14 9,5 5.5,5" fill="rgba(255,255,255,0.9)"/></svg>95</span></div>
           <button class="hamburger" onclick="toggleSidebar()">☰</button>
         </div>
         <div class="page-header">
@@ -2457,15 +2545,13 @@ function renderAthleteView() {
       + `<div id="athlete-charts" class="charts-grid"></div>`;
   } else if (currentView === 'week') {
     const ws = getWeekSessions();
-    content = weekNavHtml()
-      + (ws.length === 0
-        ? `<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-title">EMPTY TRACK</div><div class="empty-sub">No sessions this week. Rest up — race day is coming.</div></div>`
-        : renderWeekGrid(ws, false));
+    content = weekNavHtml() + renderWeekGrid(ws, false);
   } else if (currentView === 'records') {
     content = renderRecordsView(false);
   } else {
     const shown = athleteTab === 'upcoming' ? upcoming : past;
-    content = raceSectionHtml({ isCoach: false });
+    content = unavailSectionHtml(false);
+    content += raceSectionHtml({ isCoach: false });
     content += `
       <div class="view-tabs">
         <button class="view-tab ${athleteTab === 'upcoming' ? 'active' : ''}" onclick="switchAthleteTab('upcoming')">Upcoming</button>
@@ -2484,7 +2570,7 @@ function renderAthleteView() {
     <div class="athlete-layout">
       <div class="athlete-header">
         <div>
-          <div style="font-family:var(--disp);font-size:28px;letter-spacing:2px;color:var(--accent);margin-bottom:2px">PACECOACH <span style="background:var(--accent);color:#fff;padding:0 6px;border-radius:5px;font-size:18px;vertical-align:middle">95</span></div>
+          <div style="font-family:var(--disp);font-size:28px;letter-spacing:2px;color:var(--accent);margin-bottom:2px">PACECOACH <span class="badge-95 badge-95-md"><svg width="7" height="11" viewBox="0 0 9 14" fill="none" style="flex-shrink:0"><polygon points="6,0 2,6 5,6 3,14 9,5 5.5,5" fill="rgba(255,255,255,0.9)"/></svg>95</span></div>
           <div style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">${currentProfile.full_name}</div>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
