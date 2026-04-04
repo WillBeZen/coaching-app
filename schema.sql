@@ -1,6 +1,52 @@
 -- WARNING: This schema is for context only and is not meant to be run.
 -- Table order and constraints may not be valid for execution.
 
+CREATE TABLE public.training_groups (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  coach_id uuid NOT NULL,
+  name text NOT NULL,
+  colour text NOT NULL DEFAULT '#6366F1',
+  emoji text NOT NULL DEFAULT '🏃',
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT training_groups_pkey PRIMARY KEY (id),
+  CONSTRAINT training_groups_coach_id_fkey FOREIGN KEY (coach_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.group_members (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  group_id uuid NOT NULL,
+  athlete_id uuid NOT NULL,
+  joined_at timestamp with time zone DEFAULT now(),
+  muted_at timestamp with time zone,
+  left_at timestamp with time zone,
+  CONSTRAINT group_members_pkey PRIMARY KEY (id),
+  CONSTRAINT group_members_group_id_fkey FOREIGN KEY (group_id) REFERENCES public.training_groups(id) ON DELETE CASCADE,
+  CONSTRAINT group_members_athlete_id_fkey FOREIGN KEY (athlete_id) REFERENCES public.profiles(id),
+  CONSTRAINT group_members_unique UNIQUE (group_id, athlete_id)
+);
+CREATE TABLE public.feed_posts (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  author_id uuid NOT NULL,
+  post_type text NOT NULL,
+  content text NOT NULL,
+  target_type text NOT NULL DEFAULT 'all',
+  target_id uuid,
+  metadata jsonb,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT feed_posts_pkey PRIMARY KEY (id),
+  CONSTRAINT feed_posts_author_id_fkey FOREIGN KEY (author_id) REFERENCES public.profiles(id)
+);
+CREATE TABLE public.feed_reactions (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  post_id uuid NOT NULL,
+  user_id uuid NOT NULL,
+  emoji text NOT NULL,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT feed_reactions_pkey PRIMARY KEY (id),
+  CONSTRAINT feed_reactions_post_id_fkey FOREIGN KEY (post_id) REFERENCES public.feed_posts(id) ON DELETE CASCADE,
+  CONSTRAINT feed_reactions_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.profiles(id),
+  CONSTRAINT feed_reactions_unique UNIQUE (post_id, user_id, emoji)
+);
+
 CREATE TABLE public.coach_athletes (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   coach_id uuid NOT NULL,
