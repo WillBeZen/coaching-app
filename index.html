@@ -1262,6 +1262,14 @@ async function handleLogout() {
 // ══════════════════════════════════════════════════
 //  DATA LOADING
 // ══════════════════════════════════════════════════
+function getActiveAthleteIds() {
+  if (selectedAthId !== 'all') return [selectedAthId];
+  if (selectedGroupId) {
+    return groupMembers.filter(m => m.group_id === selectedGroupId && !m.left_at).map(m => m.athlete_id);
+  }
+  return athletes.map(a => a.id);
+}
+
 async function loadAthletes() {
   const { data } = await sb.from('coach_athletes')
     .select('athlete_id, profiles!coach_athletes_athlete_id_fkey(id, full_name, email)')
@@ -1270,10 +1278,11 @@ async function loadAthletes() {
 }
 
 async function loadCoachSessions() {
+  const athIds = getActiveAthleteIds();
+  if (!athIds.length) { sessions = []; logs = {}; return; }
   let q = sb.from('sessions').select('*')
-    .eq('coach_id', currentUser.id)
+    .in('athlete_id', athIds)
     .order('scheduled_date', { ascending: true });
-  if (selectedAthId !== 'all') q = q.eq('athlete_id', selectedAthId);
   const { data } = await q;
   sessions = data || [];
   await loadLogs(sessions.map(s => s.id));
@@ -1297,8 +1306,7 @@ async function loadLogs(ids) {
 async function loadRaces() {
   const isCoach = currentProfile.role === 'coach';
   if (isCoach) {
-    // Load all races for the selected athlete(s) — includes coach-assigned AND athlete self-added
-    const athIds = selectedAthId !== 'all' ? [selectedAthId] : athletes.map(a => a.id);
+    const athIds = getActiveAthleteIds();
     if (!athIds.length) { races = []; return; }
     let q = sb.from('races').select('*')
       .in('athlete_id', athIds)
@@ -1316,7 +1324,7 @@ async function loadRaces() {
 async function loadPersonalBests() {
   const isCoach = currentProfile.role === 'coach';
   if (isCoach) {
-    const athIds = selectedAthId !== 'all' ? [selectedAthId] : athletes.map(a => a.id);
+    const athIds = getActiveAthleteIds();
     if (!athIds.length) { personalBests = []; return; }
     const { data } = await sb.from('personal_bests').select('*')
       .in('athlete_id', athIds).order('distance_m', { ascending: true });
@@ -1330,7 +1338,7 @@ async function loadPersonalBests() {
 
 async function loadUnavailability() {
   if (currentProfile.role === 'coach') {
-    const athIds = selectedAthId !== 'all' ? [selectedAthId] : athletes.map(a => a.id);
+    const athIds = getActiveAthleteIds();
     if (!athIds.length) { unavailability = []; return; }
     const { data } = await sb.from('unavailability').select('*').in('athlete_id', athIds);
     unavailability = data || [];
@@ -1868,10 +1876,15 @@ async function leaveGroup(groupId) {
   renderApp();
 }
 
-function selectGroup(id) {
+async function selectGroup(id) {
   selectedGroupId = id;
   selectedAthId = 'all';
   sidebarOpen = false;
+  await loadCoachSessions();
+  await loadRaces();
+  await loadPersonalBests();
+  await loadUnavailability();
+  await loadFeed();
   renderApp();
 }
 
@@ -2812,7 +2825,7 @@ function renderRecordsView(isCoach) {
 // ══════════════════════════════════════════════════
 //  FEED VIEW
 // ══════════════════════════════════════════════════
-const FEED_EMOJIS = ['👏','🔥','💪','🎉'];
+const FEED_EMOJIS = ['🏎️','⚡','🔥','🏆'];
 
 const POST_TYPE_META = {
   announcement:    { label: 'Announcement', colour: 'var(--accent)',   bg: 'var(--accent-dim)' },
@@ -3037,11 +3050,12 @@ function renderCoachView() {
     : athletes.find(a => a.id === selectedAthId)?.full_name || 'Sessions';
 
   // Build sidebar: ungrouped athletes + group sections
-  const groupedAthIds = new Set(groupMembers.map(m => m.athlete_id));
+  const activeMembers = groupMembers.filter(m => !m.left_at);
+  const groupedAthIds = new Set(activeMembers.map(m => m.athlete_id));
   const ungrouped = athletes.filter(a => !groupedAthIds.has(a.id));
 
   const groupSections = groups.map(g => {
-    const mems = groupMembers.filter(m => m.group_id === g.id);
+    const mems = activeMembers.filter(m => m.group_id === g.id);
     const memAthletes = athletes.filter(a => mems.some(m => m.athlete_id === a.id));
     const isSelGroup = selectedGroupId === g.id;
     return `<div class="group-section">
@@ -3076,7 +3090,7 @@ function renderCoachView() {
     content = `<div id="coach-charts" class="charts-grid"></div>`;
   } else if (currentView === 'week') {
     const ws = getWeekSessions();
-    content = weekNavHtml() + renderWeekGrid(ws, selectedAthId === 'all' && !selectedGroupId);
+    content = weekNavHtml() + renderWeekGrid(ws, selectedAthId === 'all');
   } else if (currentView === 'records') {
     content = renderRecordsView(true);
   } else {
