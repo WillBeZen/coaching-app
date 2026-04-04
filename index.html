@@ -366,6 +366,22 @@
     .records-athlete-group { margin-bottom: 24px; }
     .records-athlete-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 
+    /* ── UNAVAILABILITY & EXTRA SESSIONS ─────────────────────── */
+    .unavail-banner {
+      background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 6px; padding: 4px 8px; font-size: 11px;
+      color: var(--danger); font-family: var(--mono); margin-bottom: 4px;
+    }
+    .wc-extra {
+      border-left: 3px solid var(--purple);
+      background: var(--purple-dim);
+    }
+    .badge-extra {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      padding: 2px 8px; border-radius: 20px; font-family: var(--mono);
+      background: rgba(139,92,246,.12); color: var(--purple);
+    }
+
     /* ── REGISTRATION STEPS ──────────────────────────────────── */
     .reg-step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
     .reg-step-num { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
@@ -808,6 +824,88 @@
   </div>
 </div>
 
+<!-- Mark Unavailable (athlete self-service) -->
+<div class="modal-overlay" id="m-unavailability">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title" id="unavail-title">MARK UNAVAILABLE</div>
+      <button class="modal-close" onclick="closeModal('m-unavailability')">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Start Date</label>
+      <input type="date" id="unavail-start" />
+    </div>
+    <div class="form-group">
+      <label>End Date</label>
+      <input type="date" id="unavail-end" />
+    </div>
+    <div class="form-group">
+      <label>Reason (optional)</label>
+      <input type="text" id="unavail-reason" placeholder="e.g. Holiday, Injury recovery" />
+    </div>
+    <div id="unavail-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-unavailability')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="unavail-delete-btn" onclick="deleteUnavailability()" style="display:none">Delete</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleSaveUnavailability()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Extra Session (athlete self-service) -->
+<div class="modal-overlay" id="m-extra-session">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title">LOG EXTRA SESSION</div>
+      <button class="modal-close" onclick="closeModal('m-extra-session')">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="es-title" placeholder="e.g. Parkrun, Strength workout" />
+    </div>
+    <div class="form-group">
+      <label>Session Type</label>
+      <select id="es-type">
+        <option value="easy">Easy</option>
+        <option value="tempo">Tempo</option>
+        <option value="intervals">Intervals</option>
+        <option value="long">Long</option>
+        <option value="recovery">Recovery</option>
+        <option value="race">Race</option>
+        <option value="strength">Strength</option>
+        <option value="cross">Cross Training</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="es-date" />
+    </div>
+    <div class="form-group">
+      <label>Description (optional)</label>
+      <textarea id="es-desc" placeholder="Notes about the session..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Distance (${distUnit()})</label>
+        <input type="number" id="es-dist" step="0.1" placeholder="e.g. 5.0" />
+      </div>
+      <div class="form-group">
+        <label>Duration (minutes)</label>
+        <input type="number" id="es-dur" placeholder="e.g. 45" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label>Pace (optional, e.g. 5:00)</label>
+      <input type="text" id="es-pace" placeholder="MM:SS format" />
+    </div>
+    <div id="es-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-extra-session')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleSaveExtraSession()">Log Session</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
@@ -863,6 +961,7 @@ let sessions       = [];
 let logs           = {};
 let races          = [];
 let personalBests  = [];
+let unavailability = [];
 
 // Temp storage during registration
 let pendingRegEmail = null;
@@ -886,6 +985,7 @@ function toggleUnits() { usesMiles = !usesMiles; localStorage.setItem('pacecoach
 let dupSourceId    = null;
 let currentRating  = 0;
 let sidebarOpen    = false;
+let editingUnavailId = null;
 
 // Chart instances (so we can destroy before re-creating)
 let chartInstances = {};
@@ -1081,6 +1181,18 @@ async function loadPersonalBests() {
   }
 }
 
+async function loadUnavailability() {
+  if (currentProfile.role === 'coach') {
+    const athIds = selectedAthId !== 'all' ? [selectedAthId] : athletes.map(a => a.id);
+    if (!athIds.length) { unavailability = []; return; }
+    const { data } = await sb.from('unavailability').select('*').in('athlete_id', athIds);
+    unavailability = data || [];
+  } else {
+    const { data } = await sb.from('unavailability').select('*').eq('athlete_id', currentUser.id);
+    unavailability = data || [];
+  }
+}
+
 // ══════════════════════════════════════════════════
 //  PERSONAL BESTS — EDIT / SAVE / DELETE
 // ══════════════════════════════════════════════════
@@ -1190,6 +1302,123 @@ async function checkAndUpdatePB(raceId, actualTime, status) {
 }
 
 // ══════════════════════════════════════════════════
+//  ATHLETE — UNAVAILABILITY
+// ══════════════════════════════════════════════════
+function openAddUnavailability() {
+  editingUnavailId = null;
+  el('unavail-start').value = '';
+  el('unavail-end').value = '';
+  el('unavail-reason').value = '';
+  el('unavail-err').textContent = '';
+  el('unavail-title').textContent = 'MARK UNAVAILABLE';
+  el('unavail-delete-btn').style.display = 'none';
+  openModal('m-unavailability');
+}
+
+function openEditUnavailability(id) {
+  const u = unavailability.find(x => x.id === id);
+  if (!u) return;
+  editingUnavailId = id;
+  el('unavail-start').value = u.start_date;
+  el('unavail-end').value = u.end_date;
+  el('unavail-reason').value = u.reason || '';
+  el('unavail-err').textContent = '';
+  el('unavail-title').textContent = 'EDIT UNAVAILABILITY';
+  el('unavail-delete-btn').style.display = 'inline-block';
+  openModal('m-unavailability');
+}
+
+async function handleSaveUnavailability() {
+  const start = val('unavail-start');
+  const end = val('unavail-end');
+  const reason = val('unavail-reason');
+  const errEl = el('unavail-err');
+  errEl.textContent = '';
+
+  if (!start || !end) { errEl.textContent = 'Please select start and end dates.'; return; }
+  if (start > end) { errEl.textContent = 'End date must be after start date.'; return; }
+
+  if (editingUnavailId) {
+    // Update existing
+    const { error } = await sb.from('unavailability')
+      .update({ start_date: start, end_date: end, reason: reason || null })
+      .eq('id', editingUnavailId);
+    if (error) { errEl.textContent = error.message; return; }
+  } else {
+    // Create new
+    const { error } = await sb.from('unavailability').insert({
+      athlete_id: currentUser.id,
+      start_date: start,
+      end_date: end,
+      reason: reason || null
+    });
+    if (error) { errEl.textContent = error.message; return; }
+  }
+  closeModal('m-unavailability');
+  toast('✓ Availability updated');
+  await loadUnavailability();
+  renderApp();
+}
+
+async function deleteUnavailability() {
+  if (!editingUnavailId || !confirm('Delete this unavailability period?')) return;
+  await sb.from('unavailability').delete().eq('id', editingUnavailId);
+  closeModal('m-unavailability');
+  toast('Unavailability removed');
+  await loadUnavailability();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  ATHLETE — LOG EXTRA SESSION
+// ══════════════════════════════════════════════════
+function openAddExtraSession() {
+  el('es-title').value = '';
+  el('es-type').value = 'easy';
+  el('es-date').value = todayStr();
+  el('es-desc').value = '';
+  el('es-dist').value = '';
+  el('es-dur').value = '';
+  el('es-pace').value = '';
+  el('es-err').textContent = '';
+  openModal('m-extra-session');
+}
+
+async function handleSaveExtraSession() {
+  const title = val('es-title');
+  const type = val('es-type');
+  const date = val('es-date');
+  const desc = val('es-desc');
+  const dist = val('es-dist');
+  const dur = val('es-dur');
+  const pace = val('es-pace');
+  const errEl = el('es-err');
+  errEl.textContent = '';
+
+  if (!title) { errEl.textContent = 'Please enter a session title.'; return; }
+  if (!date) { errEl.textContent = 'Please select a date.'; return; }
+
+  const { error } = await sb.from('sessions').insert({
+    coach_id: currentUser.id,
+    athlete_id: currentUser.id,
+    title,
+    session_type: type,
+    scheduled_date: date,
+    description: desc || null,
+    distance_km: dist ? Math.round((parseFloat(dist) / (usesMiles ? KM_TO_MI : 1)) * 100) / 100 : null,
+    duration_min: dur ? parseInt(dur) : null,
+    pace_target: pace || null,
+    is_extra: true
+  });
+
+  if (error) { errEl.textContent = error.message; return; }
+  closeModal('m-extra-session');
+  toast('✓ Session logged');
+  await loadAthleteSessions();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
 //  COACH — ADD ATHLETE
 // ══════════════════════════════════════════════════
 async function handleAddAthlete() {
@@ -1268,6 +1497,16 @@ async function handleCreateSession() {
   if (!athleteIds.length) { errEl.textContent = 'Select at least one athlete.'; return; }
   if (!title)              { errEl.textContent = 'Session title is required.'; return; }
   if (!date)               { errEl.textContent = 'Please set a date.'; return; }
+
+  // Check if any selected athlete has unavailability on that date
+  const blocked = athleteIds.filter(aid =>
+    unavailability.some(u => u.athlete_id === aid && u.start_date <= date && u.end_date >= date)
+  );
+  if (blocked.length) {
+    const names = blocked.map(aid => athletes.find(a => a.id === aid)?.full_name).filter(Boolean).join(', ');
+    const proceed = confirm(`⚠️ ${names} has marked ${blocked.length > 1 ? 'these dates' : 'this date'} as unavailable. Schedule anyway?`);
+    if (!proceed) return;
+  }
 
   setLoading(btn, true);
   const rows = athleteIds.map(aid => ({
@@ -1578,7 +1817,12 @@ function getMonday(d) {
   return date;
 }
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
-function dateStr(d)    { return d.toISOString().split('T')[0]; }
+function dateStr(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 function todayStr()    { return dateStr(new Date()); }
 
 function weekLabel() {
@@ -1886,6 +2130,7 @@ function renderProgressCharts(containerId) {
 function listCard(s, { showAthlete = false, isCoach = false } = {}) {
   const log = logs[s.id], completed = !!log, today = isToday(s.scheduled_date);
   const athlete = showAthlete ? athletes.find(a => a.id === s.athlete_id) : null;
+  const isExtra = s.is_extra === true;
   return `<div class="session-card ${completed ? 'done' : ''} ${today ? 'is-today' : ''}">
     ${athlete ? `<div class="athlete-tag">
       <div class="avatar av-sm">${initials(athlete.full_name)}</div>
@@ -1895,6 +2140,7 @@ function listCard(s, { showAthlete = false, isCoach = false } = {}) {
     <div class="session-top">
       <span class="session-date">${fmtDate(s.scheduled_date)}</span>
       ${badge(s.session_type)}
+      ${isExtra ? '<span class="badge-extra">EXTRA</span>' : ''}
       ${!showAthlete && completed ? '<span class="done-badge">✓ DONE</span>' : ''}
     </div>
     <div class="session-title">${s.title}</div>
@@ -1918,12 +2164,14 @@ function listCard(s, { showAthlete = false, isCoach = false } = {}) {
 function weekCard(s, showAthlete = false) {
   const log = logs[s.id];
   const athlete = showAthlete ? athletes.find(a => a.id === s.athlete_id) : null;
+  const isExtra = s.is_extra === true;
   const statParts = [
     s.distance_km ? `${displayDist(s.distance_km)}${distUnit()}` : '',
     s.duration_min ? `${s.duration_min}min` : '',
   ].filter(Boolean).join(' · ');
-  return `<div class="week-card ${log ? 'wc-done' : ''}" onclick="openDetail('${s.id}')">
+  return `<div class="week-card ${log ? 'wc-done' : ''} ${isExtra ? 'wc-extra' : ''}" onclick="openDetail('${s.id}')">
     ${badge(s.session_type)}
+    ${isExtra ? '<span class="badge badge-extra" style="margin-left:auto">EXTRA</span>' : ''}
     <div class="week-card-title">${s.title}</div>
     ${athlete ? `<div class="week-card-ath">${athlete.full_name}</div>` : ''}
     ${statParts ? `<div class="week-card-stats">${statParts}</div>` : ''}
@@ -1940,11 +2188,19 @@ function renderWeekGrid(sessionSubset, showAthlete = false) {
     const dayNum = day.getDate();
     const isT = day.getTime() === todayD.getTime();
     const daySessions = sessionSubset.filter(s => s.scheduled_date === ds);
+
+    // Check for unavailability on this day
+    const dayUnavail = unavailability.filter(u => u.start_date <= ds && u.end_date >= ds);
+    const unavailBanner = dayUnavail.length > 0
+      ? `<div class="unavail-banner">${dayUnavail[0].reason || 'Unavailable'}</div>`
+      : '';
+
     return `<div class="week-col">
       <div class="week-col-hdr ${isT ? 'is-today' : ''}">
         <div class="week-day-name">${dayLabel}</div>
         <div class="week-day-num">${dayNum}</div>
       </div>
+      ${unavailBanner}
       ${daySessions.map(s => weekCard(s, showAthlete)).join('') || ''}
     </div>`;
   }).join('');
@@ -1995,6 +2251,32 @@ function renderRecordsView(isCoach) {
       return `<div class="section-heading">RECORDS — ${(ath?.full_name || '').toUpperCase()}</div>${pbTableHtml(athPBs, false)}`;
     }
   } else {
+    // Athlete view: show both PBs and unavailability
+    const unavailHtml = unavailability.length > 0
+      ? `<div class="records-wrap" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim)">UNAVAILABLE PERIODS</div>
+            <button class="btn btn-ghost btn-xs" onclick="openAddUnavailability()" style="border-color:var(--danger);color:var(--danger)">+ Add</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${unavailability.map(u => `
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--surface2);border-radius:6px;border:1px solid rgba(239,68,68,.2)">
+                <div>
+                  <div style="font-size:12px;font-weight:600">${u.start_date}${u.end_date !== u.start_date ? ` → ${u.end_date}` : ''}</div>
+                  ${u.reason ? `<div style="font-size:11px;color:var(--text-dim);margin-top:2px">${u.reason}</div>` : ''}
+                </div>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-ghost btn-xs" onclick="openEditUnavailability('${u.id}')" style="color:var(--text-muted)">Edit</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`
+      : `<div class="records-wrap" style="margin-bottom:16px;padding:12px;text-align:center">
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">No unavailability periods scheduled.</div>
+          <button class="btn btn-ghost btn-sm" onclick="openAddUnavailability()" style="border-color:var(--danger);color:var(--danger)">+ Mark Unavailable</button>
+        </div>`;
+
     return `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <div class="section-heading" style="margin:0">MY RECORDS</div>
@@ -2003,6 +2285,7 @@ function renderRecordsView(isCoach) {
       ${!personalBests.length
         ? `<div class="empty-state"><div class="empty-icon">🏆</div><div class="empty-title">NO RECORDS YET</div><div class="empty-sub">Add your PBs manually or log a race result with a standard event to auto-record.</div></div>`
         : pbTableHtml(personalBests, true)}
+      ${unavailHtml}
     `;
   }
 }
@@ -2133,6 +2416,7 @@ async function selectAthlete(id) {
   await loadCoachSessions();
   await loadRaces();
   await loadPersonalBests();
+  await loadUnavailability();
   renderApp();
 }
 
@@ -2220,9 +2504,11 @@ function renderAthleteView() {
           <button class="vs-btn ${currentView === 'progress' ? 'active' : ''}" onclick="setView('progress')">Progress</button>
           <button class="vs-btn ${currentView === 'records' ? 'active' : ''}" onclick="setView('records')">Records</button>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-ghost btn-xs" onclick="toggleUnits()" style="font-family:var(--mono);font-size:11px">${usesMiles ? 'MI → KM' : 'KM → MI'}</button>
           <button class="btn btn-ghost btn-sm" onclick="openAthleteRace()" style="border-color:var(--gold);color:var(--gold)">+ My Race</button>
+          <button class="btn btn-ghost btn-sm" onclick="openAddExtraSession()" style="border-color:var(--purple);color:var(--purple)">+ Log Session</button>
+          <button class="btn btn-ghost btn-sm" onclick="openAddUnavailability()" style="border-color:var(--danger);color:var(--danger)">⊘ Unavailable</button>
         </div>
       </div>
 
@@ -2288,10 +2574,12 @@ async function onSignIn(user) {
     await loadCoachSessions();
     await loadRaces();
     await loadPersonalBests();
+    await loadUnavailability();
   } else {
     await loadAthleteSessions();
     await loadRaces();
     await loadPersonalBests();
+    await loadUnavailability();
   }
   renderApp();
 }
