@@ -3,8 +3,8 @@
 ## Getting Started
 
 ### Sign Up
-1. Open the app and click **Register**.
-2. Enter your name and the email address your coach used when adding you to their roster.
+1. Open the app and click **Create Account**.
+2. Enter your name and the email address (remember which email you used as the coach needs this to add you to their roster).
 3. Choose a password, select **Athlete** as your role, and click **Create Account**.
 4. On the next screen you can optionally enter your current Personal Bests — you can skip this and add them later.
 
