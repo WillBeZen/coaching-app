@@ -403,6 +403,76 @@
       background: rgba(139,92,246,.12); color: var(--purple);
     }
 
+    /* ── TRAINING GROUPS ────────────────────────────────────── */
+    .group-section { margin-bottom: 4px; }
+    .group-heading {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 8px; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .1em; color: var(--text-dim);
+      cursor: pointer; border-radius: var(--r); transition: background .1s;
+      user-select: none;
+    }
+    .group-heading:hover { background: var(--surface2); }
+    .group-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .group-chevron { margin-left: auto; font-size: 10px; transition: transform .15s; }
+    .group-chevron.open { transform: rotate(90deg); }
+    .group-members-list { padding-left: 12px; }
+    .group-count { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-left: auto; }
+    .group-manage-btn {
+      background: none; border: none; color: var(--text-dim); font-size: 13px;
+      cursor: pointer; padding: 2px 4px; line-height: 1; border-radius: 4px;
+      transition: color .1s;
+    }
+    .group-manage-btn:hover { color: var(--text); }
+
+    /* ── FEED ────────────────────────────────────────────────── */
+    .feed-wrap { max-width: 680px; }
+    .feed-compose {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--rl); padding: 14px; margin-bottom: 20px;
+    }
+    .feed-compose textarea {
+      min-height: 70px; margin-bottom: 10px; resize: none;
+      border-color: var(--border); background: var(--surface2);
+    }
+    .feed-compose-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .feed-target-select { flex: 1; min-width: 140px; font-size: 13px; padding: 7px 10px; }
+    .feed-post {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--rl); padding: 16px; margin-bottom: 12px;
+      transition: border-color .15s;
+    }
+    .feed-post:hover { border-color: var(--surface2); }
+    .feed-post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .feed-post-meta { flex: 1; min-width: 0; }
+    .feed-post-author { font-size: 13px; font-weight: 700; color: var(--text); }
+    .feed-post-time { font-size: 11px; color: var(--text-dim); font-family: var(--mono); }
+    .feed-post-badge {
+      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      padding: 2px 7px; border-radius: 20px; font-family: var(--mono); white-space: nowrap;
+    }
+    .feed-post-content { font-size: 14px; line-height: 1.6; color: var(--text); margin-bottom: 10px; white-space: pre-wrap; }
+    .feed-reactions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .reaction-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 3px 10px; font-size: 13px; cursor: pointer;
+      transition: all .15s; color: var(--text-muted);
+    }
+    .reaction-btn:hover, .reaction-btn.mine { background: var(--accent-dim); border-color: rgba(220,38,38,.3); color: var(--text); }
+    .reaction-count { font-size: 11px; font-family: var(--mono); }
+    .feed-add-reaction { background: none; border: 1px dashed var(--border); border-radius: 20px; padding: 3px 10px; font-size: 13px; cursor: pointer; color: var(--text-dim); transition: all .15s; }
+    .feed-add-reaction:hover { border-color: var(--accent); color: var(--text); }
+    .feed-tab-strip { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+    .feed-tab {
+      padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: none; color: var(--text-muted);
+      transition: all .15s;
+    }
+    .feed-tab.active { background: var(--surface2); color: var(--text); border-color: var(--text-dim); }
+    .feed-empty { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
+    .feed-auto-icon { font-size: 22px; margin-bottom: 6px; }
+
     /* ── REGISTRATION STEPS ──────────────────────────────────── */
     .reg-step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
     .reg-step-num { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
@@ -913,7 +983,7 @@
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Distance (${distUnit()})</label>
+        <label id="es-dist-lbl">Distance</label>
         <input type="number" id="es-dist" step="0.1" placeholder="e.g. 5.0" />
       </div>
       <div class="form-group">
@@ -922,14 +992,56 @@
       </div>
     </div>
     <div class="form-group">
-      <label>Pace (optional, e.g. 5:00)</label>
-      <input type="text" id="es-pace" placeholder="MM:SS format" />
+      <label id="es-pace-lbl">Pace (optional)</label>
+      <input type="text" id="es-pace" placeholder="MM:SS" />
+      <div class="pace-hint" id="es-pace-hint"></div>
     </div>
     <div id="es-err" class="err-msg"></div>
     <div style="display:flex;gap:10px;margin-top:8px">
       <button class="btn btn-ghost" onclick="closeModal('m-extra-session')">Cancel</button>
       <button class="btn btn-primary" style="flex:1" onclick="handleSaveExtraSession()">Log Session</button>
     </div>
+  </div>
+</div>
+
+<!-- Create / Edit Group (coach) -->
+<div class="modal-overlay" id="m-group">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title" id="group-modal-title">CREATE GROUP</div>
+      <button class="modal-close" onclick="closeModal('m-group')">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Group Name</label>
+      <input type="text" id="group-name" placeholder="e.g. Marathon Squad" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Colour</label>
+        <input type="color" id="group-colour" value="#6366F1" style="height:42px;padding:4px 8px;cursor:pointer" />
+      </div>
+      <div class="form-group">
+        <label>Emoji</label>
+        <input type="text" id="group-emoji" placeholder="🏃" maxlength="2" style="font-size:20px;text-align:center" />
+      </div>
+    </div>
+    <div id="group-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-group')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="group-delete-btn" onclick="handleDeleteGroup()" style="display:none">Delete Group</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleSaveGroup()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Group Members (coach) -->
+<div class="modal-overlay" id="m-group-members">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" id="group-members-title">MANAGE MEMBERS</div>
+      <button class="modal-close" onclick="closeModal('m-group-members')">✕</button>
+    </div>
+    <div id="group-members-body"></div>
   </div>
 </div>
 
@@ -989,16 +1101,22 @@ let logs           = {};
 let races          = [];
 let personalBests  = [];
 let unavailability = [];
+let groups         = [];   // training_groups rows
+let groupMembers   = [];   // group_members rows (all for coach's groups)
+let feedPosts      = [];   // feed_posts rows
+let feedReactions  = {};   // keyed by post_id → array of reaction rows
 
 // Temp storage during registration
 let pendingRegEmail = null;
 let pendingRegPass  = null;
 
 // View state
-let selectedAthId  = 'all';
-let athleteTab     = 'upcoming';
-let currentView    = 'list';        // 'list' | 'week' | 'progress'
-let weekStart      = getMonday(new Date());
+let selectedAthId   = 'all';
+let selectedGroupId = null;  // null = no group filter, uuid = group selected
+let athleteTab      = 'upcoming';
+let currentView     = 'list';  // 'list' | 'week' | 'progress' | 'records' | 'feed'
+let feedTab         = 'all';   // 'all' | group_id
+let weekStart       = getMonday(new Date());
 
 // Unit preference (km vs miles)
 let usesMiles = localStorage.getItem('pacecoach_miles') === 'true';
@@ -1009,10 +1127,11 @@ function paceUnit() { return usesMiles ? 'min/mi' : 'min/km'; }
 function toggleUnits() { usesMiles = !usesMiles; localStorage.setItem('pacecoach_miles', usesMiles); renderApp(); }
 
 // Modal state
-let dupSourceId    = null;
-let currentRating  = 0;
-let sidebarOpen    = false;
+let dupSourceId      = null;
+let currentRating    = 0;
+let sidebarOpen      = false;
 let editingUnavailId = null;
+let editingGroupId   = null;
 
 // Chart instances (so we can destroy before re-creating)
 let chartInstances = {};
@@ -1220,6 +1339,90 @@ async function loadUnavailability() {
   }
 }
 
+async function loadGroups() {
+  if (currentProfile.role === 'coach') {
+    const { data: grps } = await sb.from('training_groups').select('*')
+      .eq('coach_id', currentUser.id).order('name');
+    groups = grps || [];
+    if (!groups.length) { groupMembers = []; return; }
+    const { data: mems } = await sb.from('group_members').select('*')
+      .in('group_id', groups.map(g => g.id));
+    groupMembers = mems || [];
+  } else {
+    // Athlete: load groups they belong to (not left)
+    const { data: mems } = await sb.from('group_members').select('*')
+      .eq('athlete_id', currentUser.id).is('left_at', null);
+    groupMembers = mems || [];
+    if (!groupMembers.length) { groups = []; return; }
+    const { data: grps } = await sb.from('training_groups').select('*')
+      .in('id', groupMembers.map(m => m.group_id)).order('name');
+    groups = grps || [];
+  }
+}
+
+async function loadFeed() {
+  const isCoach = currentProfile.role === 'coach';
+  let postIds = [];
+
+  if (isCoach) {
+    // Coach sees all posts they authored + all posts targeting their groups/athletes
+    const myGroupIds = groups.map(g => g.id);
+    const myAthIds   = athletes.map(a => a.id);
+    const { data } = await sb.from('feed_posts').select('*')
+      .order('created_at', { ascending: false }).limit(200);
+    // Filter client-side: author is coach, or target is one of their groups/athletes, or target_type=all
+    feedPosts = (data || []).filter(p =>
+      p.author_id === currentUser.id ||
+      p.target_type === 'all' ||
+      (p.target_type === 'group' && myGroupIds.includes(p.target_id)) ||
+      (p.target_type === 'athlete' && myAthIds.includes(p.target_id)) ||
+      myAthIds.includes(p.author_id)
+    );
+  } else {
+    // Athlete: posts visible to them
+    const myGroupIds = groups.map(g => g.id);
+    const { data } = await sb.from('feed_posts').select('*')
+      .order('created_at', { ascending: false }).limit(200);
+    feedPosts = (data || []).filter(p => {
+      if (p.target_type === 'all') return true;
+      if (p.target_type === 'athlete' && p.target_id === currentUser.id) return true;
+      if (p.target_type === 'group' && myGroupIds.includes(p.target_id)) {
+        // Check author is still a member of this group (not left)
+        if (p.author_id === currentUser.id) return true; // own posts always visible
+        // Check if author is still an active member
+        const authorMem = groupMembers.find(m => m.group_id === p.target_id && m.athlete_id === p.author_id);
+        if (!authorMem) {
+          // Author might be coach
+          return true;
+        }
+        return authorMem.left_at === null || authorMem.left_at === undefined;
+      }
+      return false;
+    });
+  }
+
+  if (!feedPosts.length) { feedReactions = {}; return; }
+  postIds = feedPosts.map(p => p.id);
+  const { data: rxns } = await sb.from('feed_reactions').select('*').in('post_id', postIds);
+  feedReactions = {};
+  (rxns || []).forEach(r => {
+    if (!feedReactions[r.post_id]) feedReactions[r.post_id] = [];
+    feedReactions[r.post_id].push(r);
+  });
+}
+
+// Auto-post a feed entry (called from PB/session/race hooks)
+async function autoPost(postType, content, targetType, targetId, metadata) {
+  await sb.from('feed_posts').insert({
+    author_id: currentUser.id,
+    post_type: postType,
+    content,
+    target_type: targetType || 'all',
+    target_id: targetId || null,
+    metadata: { ...(metadata || {}), author_name: currentProfile.full_name },
+  });
+}
+
 // ══════════════════════════════════════════════════
 //  PERSONAL BESTS — EDIT / SAVE / DELETE
 // ══════════════════════════════════════════════════
@@ -1324,8 +1527,27 @@ async function checkAndUpdatePB(raceId, actualTime, status) {
 
   await sb.from('personal_bests').upsert(updates, { onConflict: 'athlete_id,event' });
   await loadPersonalBests();
-  if (isNewPB) toast(`🏆 NEW PB! ${race.event} — ${actualTime}`, 'ok');
-  else toast(`New Season Best! ${race.event} — ${actualTime}`, 'ok');
+  if (isNewPB) {
+    toast(`🏆 NEW PB! ${race.event} — ${actualTime}`, 'ok');
+    // Auto-post to all groups the athlete is in
+    const myGroupIds = groupMembers.filter(m => m.athlete_id === currentUser.id && !m.left_at).map(m => m.group_id);
+    const prev = existing?.pb_time ? ` (was ${existing.pb_time})` : '';
+    const postContent = `🏆 New PB — ${race.event} in ${actualTime}${prev}!`;
+    if (myGroupIds.length) {
+      for (const gid of myGroupIds) await autoPost('auto_pb', postContent, 'group', gid, { event: race.event, time: actualTime });
+    } else {
+      await autoPost('auto_pb', postContent, 'all', null, { event: race.event, time: actualTime });
+    }
+  } else {
+    toast(`New Season Best! ${race.event} — ${actualTime}`, 'ok');
+    const myGroupIds = groupMembers.filter(m => m.athlete_id === currentUser.id && !m.left_at).map(m => m.group_id);
+    const postContent = `⚡ New Season Best — ${race.event} in ${actualTime}!`;
+    if (myGroupIds.length) {
+      for (const gid of myGroupIds) await autoPost('auto_sb', postContent, 'group', gid, { event: race.event, time: actualTime });
+    } else {
+      await autoPost('auto_sb', postContent, 'all', null, { event: race.event, time: actualTime });
+    }
+  }
 }
 
 // ══════════════════════════════════════════════════
@@ -1441,6 +1663,9 @@ function openAddExtraSession() {
   el('es-dur').value = '';
   el('es-pace').value = '';
   el('es-err').textContent = '';
+  el('es-dist-lbl').textContent = `Distance (${distUnit()})`;
+  el('es-pace-lbl').textContent = `Pace (optional, ${paceUnit()})`;
+  el('es-pace-hint').textContent = `e.g. 5:30 ${paceUnit()}`;
   openModal('m-extra-session');
 }
 
@@ -1475,6 +1700,168 @@ async function handleSaveExtraSession() {
   closeModal('m-extra-session');
   toast('✓ Session logged');
   await loadAthleteSessions();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  COACH — TRAINING GROUPS
+// ══════════════════════════════════════════════════
+function openCreateGroup() {
+  editingGroupId = null;
+  el('group-modal-title').textContent = 'CREATE GROUP';
+  el('group-name').value = '';
+  el('group-colour').value = '#6366F1';
+  el('group-emoji').value = '🏃';
+  el('group-err').textContent = '';
+  el('group-delete-btn').style.display = 'none';
+  openModal('m-group');
+}
+
+function openEditGroup(id) {
+  const g = groups.find(x => x.id === id);
+  if (!g) return;
+  editingGroupId = id;
+  el('group-modal-title').textContent = 'EDIT GROUP';
+  el('group-name').value = g.name;
+  el('group-colour').value = g.colour || '#6366F1';
+  el('group-emoji').value = g.emoji || '🏃';
+  el('group-err').textContent = '';
+  el('group-delete-btn').style.display = 'inline-block';
+  openModal('m-group');
+}
+
+async function handleSaveGroup() {
+  const name   = val('group-name');
+  const colour = el('group-colour').value;
+  const emoji  = val('group-emoji') || '🏃';
+  const errEl  = el('group-err');
+  errEl.textContent = '';
+  if (!name) { errEl.textContent = 'Group name is required.'; return; }
+
+  if (editingGroupId) {
+    const { error } = await sb.from('training_groups')
+      .update({ name, colour, emoji }).eq('id', editingGroupId);
+    if (error) { errEl.textContent = error.message; return; }
+  } else {
+    const { error } = await sb.from('training_groups')
+      .insert({ coach_id: currentUser.id, name, colour, emoji });
+    if (error) { errEl.textContent = error.message; return; }
+  }
+  closeModal('m-group');
+  toast(`✓ Group ${editingGroupId ? 'updated' : 'created'}`);
+  await loadGroups();
+  renderApp();
+}
+
+async function handleDeleteGroup() {
+  if (!editingGroupId) return;
+  const g = groups.find(x => x.id === editingGroupId);
+  if (!confirm(`Delete "${g?.name}"? Members will be removed but athletes stay on your roster.`)) return;
+  await sb.from('training_groups').delete().eq('id', editingGroupId);
+  closeModal('m-group');
+  toast('Group deleted');
+  selectedGroupId = null;
+  await loadGroups();
+  renderApp();
+}
+
+function openGroupMembers(groupId) {
+  const g = groups.find(x => x.id === groupId);
+  if (!g) return;
+  el('group-members-title').textContent = `${g.emoji} ${g.name.toUpperCase()} — MEMBERS`;
+  renderGroupMembersBody(groupId);
+  openModal('m-group-members');
+}
+
+function renderGroupMembersBody(groupId) {
+  const members = groupMembers.filter(m => m.group_id === groupId && !m.left_at);
+  const memberIds = members.map(m => m.athlete_id);
+  const memberAthletes = athletes.filter(a => memberIds.includes(a.id));
+  const nonMembers = athletes.filter(a => !memberIds.includes(a.id));
+
+  el('group-members-body').innerHTML = `
+    <div style="margin-bottom:16px">
+      <div class="sidebar-heading" style="padding:0 0 8px">CURRENT MEMBERS</div>
+      ${memberAthletes.length === 0
+        ? `<div style="font-size:12px;color:var(--text-dim);padding:8px 0">No members yet.</div>`
+        : memberAthletes.map(a => `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface2);border-radius:var(--r);margin-bottom:4px">
+            <div class="avatar av-sm">${initials(a.full_name)}</div>
+            <div style="flex:1;font-size:13px;font-weight:500">${a.full_name}</div>
+            <button class="btn btn-danger btn-xs" onclick="removeFromGroup('${groupId}','${a.id}')">Remove</button>
+          </div>`).join('')}
+    </div>
+    ${nonMembers.length > 0 ? `
+    <div>
+      <div class="sidebar-heading" style="padding:0 0 8px">ADD TO GROUP</div>
+      ${nonMembers.map(a => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--r);margin-bottom:4px">
+          <div class="avatar av-sm">${initials(a.full_name)}</div>
+          <div style="flex:1;font-size:13px;font-weight:500">${a.full_name}</div>
+          <button class="btn btn-ghost btn-xs" style="border-color:var(--success);color:var(--success)" onclick="addToGroup('${groupId}','${a.id}')">+ Add</button>
+        </div>`).join('')}
+    </div>` : ''}
+  `;
+}
+
+async function addToGroup(groupId, athleteId) {
+  const { error } = await sb.from('group_members').upsert(
+    { group_id: groupId, athlete_id: athleteId, left_at: null, muted_at: null },
+    { onConflict: 'group_id,athlete_id' }
+  );
+  if (error) { toast(error.message, 'err'); return; }
+  await loadGroups();
+  renderGroupMembersBody(groupId);
+  renderApp();
+}
+
+async function removeFromGroup(groupId, athleteId) {
+  await sb.from('group_members')
+    .delete().eq('group_id', groupId).eq('athlete_id', athleteId);
+  await loadGroups();
+  renderGroupMembersBody(groupId);
+  renderApp();
+}
+
+// Athlete: mute a group feed (stays member, coach posts still come through)
+async function muteGroup(groupId) {
+  await sb.from('group_members')
+    .update({ muted_at: new Date().toISOString() })
+    .eq('group_id', groupId).eq('athlete_id', currentUser.id);
+  toast('Group muted — coach messages still visible');
+  await loadGroups();
+  renderApp();
+}
+
+async function unmuteGroup(groupId) {
+  await sb.from('group_members')
+    .update({ muted_at: null })
+    .eq('group_id', groupId).eq('athlete_id', currentUser.id);
+  toast('Group unmuted');
+  await loadGroups();
+  renderApp();
+}
+
+// Athlete: leave a group (history hidden until re-added)
+async function leaveGroup(groupId) {
+  const g = groups.find(x => x.id === groupId);
+  if (!confirm(`Leave "${g?.name}"? Your past posts will be hidden from the group. A coach can re-add you.`)) return;
+  await sb.from('group_members')
+    .update({ left_at: new Date().toISOString() })
+    .eq('group_id', groupId).eq('athlete_id', currentUser.id);
+  // Auto-post: notify group that athlete left
+  await autoPost('auto_left', `left ${g?.name}`, 'group', groupId, { group_name: g?.name });
+  toast(`You've left ${g?.name}`);
+  if (feedTab === groupId) feedTab = 'all';
+  await loadGroups();
+  await loadFeed();
+  renderApp();
+}
+
+function selectGroup(id) {
+  selectedGroupId = id;
+  selectedAthId = 'all';
+  sidebarOpen = false;
   renderApp();
 }
 
@@ -1782,6 +2169,22 @@ async function handleLogRaceResult() {
   toast('Result logged! Checkered flag!', 'ok');
   await loadRaces();
   await checkAndUpdatePB(raceId, time, status);
+  // Auto-post race completion
+  if (status === 'completed') {
+    const race = races.find(r => r.id === raceId);
+    if (race) {
+      const myGroupIds = groupMembers.filter(m => m.athlete_id === currentUser.id && !m.left_at).map(m => m.group_id);
+      const label = race.event || race.race_name;
+      const timeStr = time ? ` in ${time}` : '';
+      const postContent = `🏁 Finished ${label}${timeStr}!`;
+      if (myGroupIds.length) {
+        for (const gid of myGroupIds) await autoPost('auto_race', postContent, 'group', gid, { race_id: raceId, time });
+      } else {
+        await autoPost('auto_race', postContent, 'all', null, { race_id: raceId, time });
+      }
+    }
+  }
+  await loadFeed();
   renderApp();
 }
 
@@ -1839,11 +2242,27 @@ async function handleLogSession() {
   if (error) { errEl.textContent = error.message; return; }
   closeModal('m-log');
   toast('Lap logged! Keep rolling!', 'ok');
+  // Auto-post if athlete rated the session 4 or 5 stars
+  if (currentProfile.role === 'athlete' && currentRating >= 4) {
+    const sess = sessions.find(s => s.id === sessionId);
+    if (sess) {
+      const stars = '★'.repeat(currentRating);
+      const distPart = dist ? ` · ${dist}${distUnit()}` : '';
+      const postContent = `✅ ${sess.title}${distPart} — ${stars}`;
+      const myGroupIds = groupMembers.filter(m => m.athlete_id === currentUser.id && !m.left_at).map(m => m.group_id);
+      if (myGroupIds.length) {
+        for (const gid of myGroupIds) await autoPost('auto_session', postContent, 'group', gid, { session_id: sessionId, rating: currentRating });
+      } else {
+        await autoPost('auto_session', postContent, 'all', null, { session_id: sessionId, rating: currentRating });
+      }
+    }
+  }
   if (currentProfile.role === 'coach') {
     await loadCoachSessions();
   } else {
     await loadAthleteSessions();
   }
+  await loadFeed();
   renderApp();
 }
 
@@ -2380,6 +2799,187 @@ function renderRecordsView(isCoach) {
   }
 }
 
+// ══════════════════════════════════════════════════
+//  FEED VIEW
+// ══════════════════════════════════════════════════
+const FEED_EMOJIS = ['👏','🔥','💪','🎉'];
+
+const POST_TYPE_META = {
+  announcement:    { label: 'Announcement', colour: 'var(--accent)',   bg: 'var(--accent-dim)' },
+  message:         { label: 'Message',       colour: 'var(--purple)',   bg: 'var(--purple-dim)' },
+  auto_pb:         { label: '🏆 New PB',     colour: 'var(--gold)',     bg: 'var(--gold-dim)' },
+  auto_sb:         { label: '⚡ Season Best', colour: 'var(--gold)',     bg: 'var(--gold-dim)' },
+  auto_session:    { label: '✅ Session',     colour: 'var(--success)',  bg: 'var(--success-dim)' },
+  auto_race:       { label: '🏁 Race Result', colour: 'var(--accent)',   bg: 'var(--accent-dim)' },
+  auto_left:       { label: 'Left Group',    colour: 'var(--text-dim)', bg: 'var(--surface2)' },
+};
+
+function fmtTimeAgo(iso) {
+  const diff = (Date.now() - new Date(iso)) / 1000;
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+}
+
+function feedPostHtml(post, isCoach) {
+  const meta = POST_TYPE_META[post.post_type] || { label: post.post_type, colour: 'var(--text-dim)', bg: 'var(--surface2)' };
+  const author = athletes.find(a => a.id === post.author_id) ||
+                 (post.author_id === currentUser.id ? currentProfile : null);
+  const authorName = author?.full_name || post.metadata?.author_name || 'Unknown';
+  const rxns = feedReactions[post.id] || [];
+
+  // Group reaction emojis
+  const rxnCounts = {};
+  FEED_EMOJIS.forEach(e => { rxnCounts[e] = rxns.filter(r => r.emoji === e).length; });
+  const myRxns = new Set(rxns.filter(r => r.user_id === currentUser.id).map(r => r.emoji));
+
+  const rxnHtml = FEED_EMOJIS.map(e => rxnCounts[e] > 0 ? `
+    <button class="reaction-btn ${myRxns.has(e) ? 'mine' : ''}" onclick="toggleReaction('${post.id}','${e}')">
+      ${e} <span class="reaction-count">${rxnCounts[e]}</span>
+    </button>` : `
+    <button class="reaction-btn" onclick="toggleReaction('${post.id}','${e}')" style="opacity:.4">
+      ${e}
+    </button>`
+  ).join('');
+
+  // Target label
+  let targetLabel = '';
+  if (post.target_type === 'group') {
+    const g = groups.find(x => x.id === post.target_id);
+    if (g) targetLabel = `<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono)">→ ${g.emoji} ${g.name}</span>`;
+  } else if (post.target_type === 'athlete') {
+    const a = athletes.find(x => x.id === post.target_id);
+    if (a) targetLabel = `<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono)">→ ${a.full_name}</span>`;
+  }
+
+  const canDelete = isCoach || post.author_id === currentUser.id;
+
+  return `<div class="feed-post">
+    <div class="feed-post-header">
+      <div class="avatar av-sm">${initials(authorName)}</div>
+      <div class="feed-post-meta">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="feed-post-author">${authorName}</span>
+          <span class="feed-post-badge" style="background:${meta.bg};color:${meta.colour}">${meta.label}</span>
+          ${targetLabel}
+        </div>
+        <div class="feed-post-time">${fmtTimeAgo(post.created_at)}</div>
+      </div>
+      ${canDelete ? `<button onclick="deleteFeedPost('${post.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:4px;line-height:1;border-radius:4px" title="Delete">✕</button>` : ''}
+    </div>
+    <div class="feed-post-content">${post.content}</div>
+    <div class="feed-reactions">${rxnHtml}</div>
+  </div>`;
+}
+
+function renderFeedView(isCoach) {
+  // Filter posts for the current feedTab
+  let visiblePosts = feedPosts;
+  if (feedTab !== 'all') {
+    visiblePosts = feedPosts.filter(p =>
+      (p.target_type === 'group' && p.target_id === feedTab) ||
+      // own posts in this group
+      (p.author_id === currentUser.id && p.target_id === feedTab)
+    );
+  }
+
+  // Feed tab strip (athlete: All + each group; coach: All + each group)
+  const myGroups = isCoach ? groups : groups.filter(g =>
+    groupMembers.some(m => m.group_id === g.id && m.athlete_id === currentUser.id && !m.left_at)
+  );
+  const tabStrip = `<div class="feed-tab-strip">
+    <button class="feed-tab ${feedTab === 'all' ? 'active' : ''}" onclick="setFeedTab('all')">All</button>
+    ${myGroups.map(g => `<button class="feed-tab ${feedTab === g.id ? 'active' : ''}" onclick="setFeedTab('${g.id}')">${g.emoji} ${g.name}</button>`).join('')}
+  </div>`;
+
+  // Compose box (coach only, or athlete manual posts)
+  const composeHtml = `<div class="feed-compose">
+    <textarea id="feed-compose-text" placeholder="${isCoach ? 'Post an announcement or message to your athletes...' : 'Share something with your group...'}" rows="3"></textarea>
+    <div class="feed-compose-actions">
+      <select id="feed-compose-target" class="feed-target-select">
+        ${isCoach ? `
+          <option value="all">→ All Athletes</option>
+          ${groups.map(g => `<option value="group:${g.id}">${g.emoji} ${g.name}</option>`).join('')}
+          ${athletes.map(a => `<option value="athlete:${a.id}">✉ ${a.full_name} (private)</option>`).join('')}
+        ` : myGroups.map(g => `<option value="group:${g.id}">${g.emoji} ${g.name}</option>`).join('')}
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="handlePostFeed()">Post</button>
+    </div>
+  </div>`;
+
+  // Group settings for athlete (mute/leave per group)
+  const athleteGroupControls = !isCoach && myGroups.length > 0 ? `
+    <div style="margin-bottom:20px">
+      ${myGroups.map(g => {
+        const mem = groupMembers.find(m => m.group_id === g.id && m.athlete_id === currentUser.id);
+        const isMuted = !!mem?.muted_at;
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)">
+          <span class="group-dot" style="background:${g.colour}"></span>
+          <span style="flex:1;font-size:13px;font-weight:600">${g.emoji} ${g.name}</span>
+          <button class="btn btn-ghost btn-xs" onclick="${isMuted ? `unmuteGroup('${g.id}')` : `muteGroup('${g.id}')`}">${isMuted ? '🔔 Unmute' : '🔕 Mute'}</button>
+          <button class="btn btn-danger btn-xs" onclick="leaveGroup('${g.id}')">Leave</button>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const postsHtml = visiblePosts.length > 0
+    ? visiblePosts.map(p => feedPostHtml(p, isCoach)).join('')
+    : `<div class="feed-empty"><div class="feed-auto-icon">📭</div>Nothing here yet. ${isCoach ? 'Post an announcement above.' : 'Your coach will post here soon.'}</div>`;
+
+  return `<div class="feed-wrap">
+    ${composeHtml}
+    ${tabStrip}
+    ${!isCoach ? athleteGroupControls : ''}
+    ${postsHtml}
+  </div>`;
+}
+
+function setFeedTab(tab) {
+  feedTab = tab;
+  renderApp();
+}
+
+async function handlePostFeed() {
+  const text = el('feed-compose-text')?.value?.trim();
+  if (!text) { toast('Write something first', 'err'); return; }
+  const targetVal = el('feed-compose-target')?.value || 'all';
+  let targetType = 'all', targetId = null;
+  if (targetVal.startsWith('group:'))   { targetType = 'group';   targetId = targetVal.replace('group:',''); }
+  if (targetVal.startsWith('athlete:')) { targetType = 'athlete'; targetId = targetVal.replace('athlete:',''); }
+  const postType = targetType === 'athlete' ? 'message' : 'announcement';
+  const { error } = await sb.from('feed_posts').insert({
+    author_id: currentUser.id, post_type: postType,
+    content: text, target_type: targetType, target_id: targetId || null,
+    metadata: { author_name: currentProfile.full_name },
+  });
+  if (error) { toast(error.message, 'err'); return; }
+  el('feed-compose-text').value = '';
+  toast('✓ Posted');
+  await loadFeed();
+  renderApp();
+}
+
+async function toggleReaction(postId, emoji) {
+  const rxns = feedReactions[postId] || [];
+  const mine = rxns.find(r => r.user_id === currentUser.id && r.emoji === emoji);
+  if (mine) {
+    await sb.from('feed_reactions').delete().eq('id', mine.id);
+  } else {
+    await sb.from('feed_reactions').insert({ post_id: postId, user_id: currentUser.id, emoji });
+  }
+  await loadFeed();
+  renderApp();
+}
+
+async function deleteFeedPost(postId) {
+  if (!confirm('Delete this post?')) return;
+  await sb.from('feed_posts').delete().eq('id', postId);
+  await loadFeed();
+  renderApp();
+}
+
 function pbTableHtml(pbs, editable) {
   const allEvents = STANDARD_EVENTS.map(e => e.label);
   // Show all standard events; only render rows that have data OR if athlete (show all as editable)
@@ -2420,23 +3020,53 @@ function pbTableHtml(pbs, editable) {
 // ══════════════════════════════════════════════════
 function renderCoachView() {
   const loggedCount = Object.keys(logs).length;
-  const selName = selectedAthId === 'all'
-    ? 'All Athletes'
+  const selGroup = selectedGroupId ? groups.find(g => g.id === selectedGroupId) : null;
+  const selName = selGroup
+    ? `${selGroup.emoji} ${selGroup.name}`
+    : selectedAthId === 'all' ? 'All Athletes'
     : athletes.find(a => a.id === selectedAthId)?.full_name || 'Sessions';
 
-  const rosterItems = athletes.map(a => `
-    <div class="roster-item ${selectedAthId === a.id ? 'active' : ''}"
+  // Build sidebar: ungrouped athletes + group sections
+  const groupedAthIds = new Set(groupMembers.map(m => m.athlete_id));
+  const ungrouped = athletes.filter(a => !groupedAthIds.has(a.id));
+
+  const groupSections = groups.map(g => {
+    const mems = groupMembers.filter(m => m.group_id === g.id);
+    const memAthletes = athletes.filter(a => mems.some(m => m.athlete_id === a.id));
+    const isSelGroup = selectedGroupId === g.id;
+    return `<div class="group-section">
+      <div class="group-heading ${isSelGroup ? 'active' : ''}" onclick="selectGroup('${g.id}')">
+        <span class="group-dot" style="background:${g.colour}"></span>
+        <span>${g.emoji} ${g.name}</span>
+        <span class="group-count">${memAthletes.length}</span>
+        <button class="group-manage-btn" onclick="event.stopPropagation();openGroupMembers('${g.id}')" title="Manage members">⚙</button>
+        <button class="group-manage-btn" onclick="event.stopPropagation();openEditGroup('${g.id}')" title="Edit group">✎</button>
+      </div>
+      ${memAthletes.map(a => `
+        <div class="roster-item ${selectedAthId === a.id && !selectedGroupId ? 'active' : ''} group-members-list"
+             onclick="selectAthlete('${a.id}')">
+          <span class="group-dot" style="background:${g.colour};margin-left:4px"></span>
+          <div class="avatar av-sm">${initials(a.full_name)}</div>
+          <div class="roster-name">${a.full_name}</div>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+
+  const ungroupedItems = ungrouped.map(a => `
+    <div class="roster-item ${selectedAthId === a.id && !selectedGroupId ? 'active' : ''}"
          onclick="selectAthlete('${a.id}')">
       <div class="avatar">${initials(a.full_name)}</div>
       <div class="roster-name">${a.full_name}</div>
     </div>`).join('');
 
   let content;
-  if (currentView === 'progress') {
+  if (currentView === 'feed') {
+    content = renderFeedView(true);
+  } else if (currentView === 'progress') {
     content = `<div id="coach-charts" class="charts-grid"></div>`;
   } else if (currentView === 'week') {
     const ws = getWeekSessions();
-    content = weekNavHtml() + renderWeekGrid(ws, selectedAthId === 'all');
+    content = weekNavHtml() + renderWeekGrid(ws, selectedAthId === 'all' && !selectedGroupId);
   } else if (currentView === 'records') {
     content = renderRecordsView(true);
   } else {
@@ -2453,15 +3083,18 @@ function renderCoachView() {
         <div class="sidebar-logo">PACECOACH <span class="badge-95 badge-95-sm"><svg width="6" height="10" viewBox="0 0 9 14" fill="none" style="flex-shrink:0"><polygon points="6,0 2,6 5,6 3,14 9,5 5.5,5" fill="rgba(255,255,255,0.9)"/></svg>95</span></div>
         <div class="sidebar-inner">
           <div class="sidebar-heading">Roster</div>
-          <div class="roster-item ${selectedAthId === 'all' ? 'active' : ''}" onclick="selectAthlete('all')">
+          <div class="roster-item ${!selectedGroupId && selectedAthId === 'all' ? 'active' : ''}" onclick="selectAthlete('all')">
             <div class="avatar" style="background:var(--accent-dim)">ALL</div>
             <div class="roster-name">All Athletes</div>
           </div>
           <div class="divider"></div>
-          ${rosterItems}
+          ${groupSections}
+          ${ungrouped.length > 0 && groups.length > 0 ? `<div class="sidebar-heading" style="margin-top:6px">UNGROUPED</div>` : ''}
+          ${ungroupedItems}
           ${athletes.length === 0 ? `<div style="padding:8px;font-size:12px;color:var(--text-dim)">No athletes yet</div>` : ''}
         </div>
         <div class="sidebar-footer">
+          <button class="btn btn-ghost btn-xs btn-full" onclick="openCreateGroup()" style="color:var(--text-dim)">+ New Group</button>
           <button class="btn btn-ghost btn-sm btn-full" onclick="openAddAthlete()">+ Add Athlete</button>
           <button class="btn btn-ghost btn-sm btn-full" style="color:var(--text-muted)" onclick="handleLogout()">Sign Out</button>
         </div>
@@ -2483,6 +3116,7 @@ function renderCoachView() {
               <button class="vs-btn ${currentView === 'week' ? 'active' : ''}" onclick="setView('week')">Week</button>
               <button class="vs-btn ${currentView === 'progress' ? 'active' : ''}" onclick="setView('progress')">Progress</button>
               <button class="vs-btn ${currentView === 'records' ? 'active' : ''}" onclick="setView('records')">Records</button>
+              <button class="vs-btn ${currentView === 'feed' ? 'active' : ''}" onclick="setView('feed')">Feed</button>
             </div>
             <button class="btn btn-ghost btn-xs" onclick="toggleUnits()" style="font-family:var(--mono);font-size:11px">${usesMiles ? 'MI → KM' : 'KM → MI'}</button>
             <button class="btn btn-ghost btn-sm" onclick="openCreateRace()" style="border-color:var(--gold);color:var(--gold)">+ Race</button>
@@ -2500,11 +3134,13 @@ function renderCoachView() {
 
 async function selectAthlete(id) {
   selectedAthId = id;
+  selectedGroupId = null;
   sidebarOpen = false;
   await loadCoachSessions();
   await loadRaces();
   await loadPersonalBests();
   await loadUnavailability();
+  await loadFeed();
   renderApp();
 }
 
@@ -2540,7 +3176,9 @@ function renderAthleteView() {
   }
 
   let content;
-  if (currentView === 'progress') {
+  if (currentView === 'feed') {
+    content = renderFeedView(false);
+  } else if (currentView === 'progress') {
     content = raceSectionHtml({ isCoach: false })
       + `<div id="athlete-charts" class="charts-grid"></div>`;
   } else if (currentView === 'week') {
@@ -2589,6 +3227,7 @@ function renderAthleteView() {
           <button class="vs-btn ${currentView === 'week' ? 'active' : ''}" onclick="setView('week')">Week</button>
           <button class="vs-btn ${currentView === 'progress' ? 'active' : ''}" onclick="setView('progress')">Progress</button>
           <button class="vs-btn ${currentView === 'records' ? 'active' : ''}" onclick="setView('records')">Records</button>
+          <button class="vs-btn ${currentView === 'feed' ? 'active' : ''}" onclick="setView('feed')">Feed</button>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-ghost btn-xs" onclick="toggleUnits()" style="font-family:var(--mono);font-size:11px">${usesMiles ? 'MI → KM' : 'KM → MI'}</button>
@@ -2661,11 +3300,15 @@ async function onSignIn(user) {
     await loadRaces();
     await loadPersonalBests();
     await loadUnavailability();
+    await loadGroups();
+    await loadFeed();
   } else {
     await loadAthleteSessions();
     await loadRaces();
     await loadPersonalBests();
     await loadUnavailability();
+    await loadGroups();
+    await loadFeed();
   }
   renderApp();
 }
