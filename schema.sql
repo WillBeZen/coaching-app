@@ -68,6 +68,16 @@ CREATE TABLE public.session_logs (
   CONSTRAINT session_logs_session_id_fkey FOREIGN KEY (session_id) REFERENCES public.sessions(id),
   CONSTRAINT session_logs_athlete_id_fkey FOREIGN KEY (athlete_id) REFERENCES public.profiles(id)
 );
+CREATE TABLE public.unavailability (
+  id uuid NOT NULL DEFAULT gen_random_uuid(),
+  athlete_id uuid NOT NULL,
+  start_date date NOT NULL,
+  end_date date NOT NULL,
+  reason text,
+  created_at timestamp with time zone DEFAULT now(),
+  CONSTRAINT unavailability_pkey PRIMARY KEY (id),
+  CONSTRAINT unavailability_athlete_id_fkey FOREIGN KEY (athlete_id) REFERENCES public.profiles(id)
+);
 CREATE TABLE public.sessions (
   id uuid NOT NULL DEFAULT gen_random_uuid(),
   coach_id uuid NOT NULL,
@@ -81,6 +91,7 @@ CREATE TABLE public.sessions (
   pace_target text,
   heart_rate_zone text,
   coach_notes text,
+  is_extra boolean NOT NULL DEFAULT false,
   created_at timestamp with time zone DEFAULT now(),
   CONSTRAINT sessions_pkey PRIMARY KEY (id),
   CONSTRAINT sessions_coach_id_fkey FOREIGN KEY (coach_id) REFERENCES public.profiles(id),
