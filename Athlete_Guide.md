@@ -106,7 +106,7 @@ The Feed is where your coach posts announcements and where achievements get cele
 Go to the **Feed** tab. Use the tab strip to switch between **All** posts and individual group feeds.
 
 ### Reacting to Posts
-Click 👏 🔥 💪 or 🎉 under any post to react. Click again to remove your reaction.
+Click 🏎️ ⚡ 🔥 or 🏆 under any post to react. Click again to remove your reaction.
 
 ### Group Controls
 In the Feed tab, you'll see controls for each group you're in:
