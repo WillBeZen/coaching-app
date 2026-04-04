@@ -119,7 +119,7 @@ The feed automatically celebrates athlete achievements:
 - Session rated 4 or 5 stars by the athlete
 
 ### Reactions
-Click any of the emoji buttons (👏 🔥 💪 🎉) below a post to react. Click again to remove your reaction.
+Click any of the emoji buttons (🏎️ ⚡ 🔥 🏆) below a post to react. Click again to remove your reaction.
 
 ### Deleting a Post
 Click the **✕** button on any post to delete it (you can delete any post on your roster's feed).
