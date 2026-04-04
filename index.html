@@ -718,6 +718,9 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<!-- Ka-chow Sound -->
+<audio id="ka-chow-sound" src="audio.mp3"></audio>
+
 <script>
 // ══════════════════════════════════════════════════
 //  ⚠️  FILL IN YOUR SUPABASE PROJECT DETAILS
@@ -1843,6 +1846,14 @@ async function onSignIn(user) {
   currentProfile = profile;
   el('auth-screen').style.display = 'none';
   el('app').style.display = 'block';
+
+  // Play Ka-chow sound
+  const audio = el('ka-chow-sound');
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play().catch(e => console.log('Audio play blocked:', e));
+  }
+
   if (profile.role === 'coach') {
     await loadAthletes();
     await loadCoachSessions();
