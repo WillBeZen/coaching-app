@@ -3,36 +3,47 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PaceCoach</title>
+  <title>PaceCoach 95</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
 
   <style>
     /* ── TOKENS ─────────────────────────────────────────────── */
-    :root {
-      --bg:          #0D0F14;
-      --surface:     #161922;
-      --surface2:    #1E2230;
-      --border:      #2A2F40;
-      --accent:      #F97316;
-      --accent-dim:  rgba(249,115,22,0.1);
-      --accent-glow: rgba(249,115,22,0.25);
-      --text:        #E8ECF4;
-      --text-muted:  #6B7280;
-      --text-dim:    #4B5563;
-      --success:     #10B981;
-      --success-dim: rgba(16,185,129,0.1);
-      --danger:      #EF4444;
-      --warning:     #FBBF24;
-      --purple:      #8B5CF6;
-      --purple-dim:  rgba(139,92,246,0.1);
-      --mono:  'Space Mono', monospace;
-      --sans:  'DM Sans', sans-serif;
-      --disp:  'Bebas Neue', sans-serif;
-      --r:  8px;
-      --rl: 12px;
-    }
+    /* ── LIGHTNING MCQUEEN THEME ──────────────────────────────  */
+:root {
+  /* Asphalt / track surface */
+  --bg:          #0C0C10;
+  --surface:     #18181F;
+  --surface2:    #222230;
+  --border:      #33334A;
+
+  /* Racing Red — #95 livery */
+  --accent:      #DC2626;
+  --accent-dim:  rgba(220, 38, 38, 0.1);
+  --accent-glow: rgba(220, 38, 38, 0.35);
+
+  /* Lightning bolt yellow */
+  --gold:        #FFD700;
+  --gold-dim:    rgba(255, 215, 0, 0.1);
+
+  --text:        #F8FAFC;
+  --text-muted:  #94A3B8;
+  --text-dim:    #475569;
+
+  --success:     #10B981;
+  --success-dim: rgba(16, 185, 129, 0.1);
+  --danger:      #EF4444;
+  --warning:     #FFD700;
+  --purple:      #8B5CF6;
+  --purple-dim:  rgba(139, 92, 246, 0.1);
+
+  --mono:  'Space Mono', monospace;
+  --sans:  'DM Sans', sans-serif;
+  --disp:  'Bebas Neue', sans-serif;
+  --r:  8px;
+  --rl: 12px;
+}
 
     /* ── RESET ─────────────────────────────────────────────── */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -53,8 +64,8 @@
       display: flex; align-items: center; justify-content: center;
       min-height: 100svh; padding: 24px;
       background:
-        radial-gradient(ellipse at 25% 20%, rgba(249,115,22,0.08) 0%, transparent 55%),
-        radial-gradient(ellipse at 75% 80%, rgba(249,115,22,0.04) 0%, transparent 50%),
+        radial-gradient(ellipse at 25% 20%, rgba(220,38,38,0.10) 0%, transparent 55%),
+        radial-gradient(ellipse at 75% 80%, rgba(255,215,0,0.06) 0%, transparent 50%),
         var(--bg);
     }
     .auth-card   { width: 100%; max-width: 420px; }
@@ -113,7 +124,7 @@
       white-space: nowrap; text-decoration: none; line-height: 1;
     }
     .btn-primary  { background: var(--accent); color: #fff; }
-    .btn-primary:hover { background: #ea6c0f; box-shadow: 0 0 20px var(--accent-glow); }
+    .btn-primary:hover { background: #B91C1C; box-shadow: 0 0 20px var(--accent-glow); }
     .btn-ghost    { background: var(--surface2); color: var(--text); border: 1px solid var(--border); }
     .btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
     .btn-danger   { background: rgba(239,68,68,.08); color: var(--danger); border: 1px solid rgba(239,68,68,.2); }
@@ -183,7 +194,7 @@
     .week-label { font-family: var(--mono); font-size: 13px; color: var(--text); flex: 1; text-align: center; }
     .week-arrow { background: var(--surface2); border: 1px solid var(--border); color: var(--text-muted); border-radius: var(--r); padding: 6px 14px; cursor: pointer; font-size: 14px; font-family: var(--sans); font-weight: 600; transition: all .15s; }
     .week-arrow:hover { border-color: var(--accent); color: var(--accent); }
-    .week-today-btn { background: var(--accent-dim); border: 1px solid rgba(249,115,22,.3); color: var(--accent); border-radius: var(--r); padding: 6px 14px; cursor: pointer; font-size: 12px; font-family: var(--sans); font-weight: 700; }
+    .week-today-btn { background: var(--accent-dim); border: 1px solid rgba(220,38,38,.3); color: var(--accent); border-radius: var(--r); padding: 6px 14px; cursor: pointer; font-size: 12px; font-family: var(--sans); font-weight: 700; }
 
     /* ── WEEK GRID ─────────────────────────────────────────── */
     .week-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
@@ -215,7 +226,7 @@
     }
     .session-card:hover { border-left-color: var(--accent); box-shadow: 0 4px 24px rgba(0,0,0,.25); }
     .session-card.done    { border-left-color: var(--success); opacity: .88; }
-    .session-card.is-today { border-left-color: var(--accent); background: linear-gradient(135deg, var(--surface) 0%, rgba(249,115,22,.04) 100%); }
+    .session-card.is-today { border-left-color: var(--accent); background: linear-gradient(135deg, var(--surface) 0%, rgba(220,38,38,.04) 100%); }
     .session-top { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
     .session-date { font-family: var(--mono); font-size: 11px; color: var(--text-muted); }
     .done-badge   { font-size: 10px; color: var(--success); font-weight: 700; margin-left: auto; }
@@ -234,7 +245,7 @@
     /* ── TYPE BADGES ─────────────────────────────────────────── */
     .type-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em; padding: 2px 8px; border-radius: 20px; font-family: var(--mono); }
     .b-easy      { background: rgba(16,185,129,.12);  color: #10B981; }
-    .b-tempo     { background: rgba(249,115,22,.12);  color: var(--accent); }
+    .b-tempo     { background: rgba(255,215,0,.12);  color: var(--gold); }
     .b-intervals { background: rgba(239,68,68,.12);   color: var(--danger); }
     .b-long      { background: rgba(139,92,246,.12);  color: #8B5CF6; }
     .b-recovery  { background: rgba(107,114,128,.12); color: #9CA3AF; }
@@ -265,7 +276,7 @@
     .race-name { font-size: 16px; font-weight: 600; margin: 6px 0 4px; }
     .race-meta { font-size: 12px; color: var(--text-muted); font-family: var(--mono); }
     .race-target { margin-top: 8px; padding: 8px 12px; background: var(--surface2); border-radius: 6px; }
-    .race-target-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--warning); margin-bottom: 2px; }
+    .race-target-lbl { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--gold); margin-bottom: 2px; }
     .race-target-val { font-family: var(--mono); font-size: 15px; font-weight: 700; }
     .races-section { margin-bottom: 28px; }
     .races-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
@@ -325,7 +336,7 @@
 
     /* ── STAR RATING ─────────────────────────────────────────── */
     .star { font-size: 26px; cursor: pointer; color: var(--border); transition: color .1s; }
-    .star.on, .star:hover { color: var(--warning); }
+    .star.on, .star:hover { color: var(--gold); }
 
     /* ── MISC ─────────────────────────────────────────── */
     .err-msg { color: var(--danger);  font-size: 12px; margin-top: 8px; }
@@ -333,6 +344,141 @@
     .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: spin .6s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
     .section-heading { font-family: var(--disp); font-size: 22px; letter-spacing: 1px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+
+    /* ── RECORDS / PB TABLE ─────────────────────────────────── */
+    .records-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl); padding: 20px; }
+    .records-table { width: 100%; border-collapse: collapse; margin-top: 12px; }
+    .records-table th {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      color: var(--text-dim); padding: 8px 12px; text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    .records-table td { padding: 10px 12px; border-bottom: 1px solid rgba(51,51,74,.4); vertical-align: middle; }
+    .records-table tr:last-child td { border-bottom: none; }
+    .records-table tr:hover td { background: var(--surface2); }
+    .pb-event { font-family: var(--mono); font-size: 12px; font-weight: 700; color: var(--text); }
+    .pb-time-cell { font-family: var(--mono); font-size: 14px; font-weight: 700; color: var(--gold); }
+    .pb-time-cell.empty { color: var(--text-dim); font-size: 12px; }
+    .pb-date-cell { font-size: 11px; color: var(--text-muted); font-family: var(--mono); }
+    .pb-badge { display: inline-block; font-size: 9px; font-weight: 700; letter-spacing: .08em;
+      padding: 2px 6px; border-radius: 10px; font-family: var(--mono); vertical-align: middle; margin-left: 6px; }
+    .pb-badge-new { background: rgba(255,215,0,.15); color: var(--gold); border: 1px solid rgba(255,215,0,.4); }
+    .records-athlete-group { margin-bottom: 24px; }
+    .records-athlete-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+
+    /* ── MCQUEEN #95 BADGE ──────────────────────────────────── */
+    .badge-95 {
+      display: inline-flex; align-items: center; justify-content: center; gap: 1px;
+      background: linear-gradient(175deg, #FFD700 0%, #FF6B00 45%, #DC2626 100%);
+      color: #fff; font-family: var(--disp); font-weight: 900; letter-spacing: 1px;
+      border-radius: 5px; vertical-align: middle; line-height: 1;
+      box-shadow: 0 2px 8px rgba(220,38,38,0.5), inset 0 1px 0 rgba(255,255,255,0.2);
+      text-shadow: 0 1px 3px rgba(0,0,0,0.4);
+      position: relative; overflow: hidden;
+    }
+    .badge-95::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 50%);
+      pointer-events: none;
+    }
+    .badge-95-lg  { font-size: 22px; padding: 2px 10px 3px; }
+    .badge-95-md  { font-size: 16px; padding: 1px 7px 2px; }
+    .badge-95-sm  { font-size: 13px; padding: 1px 6px 2px; }
+    .badge-95-xs  { font-size: 11px; padding: 1px 5px 2px; }
+
+    /* ── UNAVAILABILITY & EXTRA SESSIONS ─────────────────────── */
+    .unavail-banner {
+      background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.3);
+      border-radius: 6px; padding: 4px 8px; font-size: 11px;
+      color: var(--danger); font-family: var(--mono); margin-bottom: 4px;
+    }
+    .wc-extra {
+      border-left: 3px solid var(--purple);
+      background: var(--purple-dim);
+    }
+    .badge-extra {
+      font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      padding: 2px 8px; border-radius: 20px; font-family: var(--mono);
+      background: rgba(139,92,246,.12); color: var(--purple);
+    }
+
+    /* ── TRAINING GROUPS ────────────────────────────────────── */
+    .group-section { margin-bottom: 4px; }
+    .group-heading {
+      display: flex; align-items: center; gap: 6px;
+      padding: 6px 8px; font-size: 11px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: .1em; color: var(--text-dim);
+      cursor: pointer; border-radius: var(--r); transition: background .1s;
+      user-select: none;
+    }
+    .group-heading:hover { background: var(--surface2); }
+    .group-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .group-chevron { margin-left: auto; font-size: 10px; transition: transform .15s; }
+    .group-chevron.open { transform: rotate(90deg); }
+    .group-members-list { padding-left: 12px; }
+    .group-count { font-family: var(--mono); font-size: 10px; color: var(--text-dim); margin-left: auto; }
+    .group-manage-btn {
+      background: none; border: none; color: var(--text-muted); font-size: 13px;
+      cursor: pointer; padding: 2px 4px; line-height: 1; border-radius: 4px;
+      transition: color .1s;
+    }
+    .group-manage-btn:hover { color: var(--text); }
+
+    /* ── FEED ────────────────────────────────────────────────── */
+    .feed-wrap { max-width: 680px; }
+    .feed-compose {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--rl); padding: 14px; margin-bottom: 20px;
+    }
+    .feed-compose textarea {
+      min-height: 70px; margin-bottom: 10px; resize: none;
+      border-color: var(--border); background: var(--surface2);
+    }
+    .feed-compose-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .feed-target-select { flex: 1; min-width: 140px; font-size: 13px; padding: 7px 10px; }
+    .feed-post {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--rl); padding: 16px; margin-bottom: 12px;
+      transition: border-color .15s;
+    }
+    .feed-post:hover { border-color: var(--surface2); }
+    .feed-post-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+    .feed-post-meta { flex: 1; min-width: 0; }
+    .feed-post-author { font-size: 13px; font-weight: 700; color: var(--text); }
+    .feed-post-time { font-size: 11px; color: var(--text-dim); font-family: var(--mono); }
+    .feed-post-badge {
+      font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: .1em;
+      padding: 2px 7px; border-radius: 20px; font-family: var(--mono); white-space: nowrap;
+    }
+    .feed-post-content { font-size: 14px; line-height: 1.6; color: var(--text); margin-bottom: 10px; white-space: pre-wrap; }
+    .feed-reactions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .reaction-btn {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--surface2); border: 1px solid var(--border);
+      border-radius: 20px; padding: 3px 10px; font-size: 13px; cursor: pointer;
+      transition: all .15s; color: var(--text-muted);
+    }
+    .reaction-btn:hover, .reaction-btn.mine { background: var(--accent-dim); border-color: rgba(220,38,38,.3); color: var(--text); }
+    .reaction-count { font-size: 11px; font-family: var(--mono); }
+    .feed-add-reaction { background: none; border: 1px dashed var(--border); border-radius: 20px; padding: 3px 10px; font-size: 13px; cursor: pointer; color: var(--text-dim); transition: all .15s; }
+    .feed-add-reaction:hover { border-color: var(--accent); color: var(--text); }
+    .feed-tab-strip { display: flex; gap: 4px; margin-bottom: 16px; flex-wrap: wrap; }
+    .feed-tab {
+      padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: none; color: var(--text-muted);
+      transition: all .15s;
+    }
+    .feed-tab.active { background: var(--surface2); color: var(--text); border-color: var(--text-dim); }
+    .feed-empty { text-align: center; padding: 40px 20px; color: var(--text-dim); font-size: 13px; }
+    .feed-auto-icon { font-size: 22px; margin-bottom: 6px; }
+
+    /* ── REGISTRATION STEPS ──────────────────────────────────── */
+    .reg-step-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .reg-step-num { font-family: var(--mono); font-size: 10px; color: var(--text-dim); }
+    .pb-entry-row { display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px; margin-bottom: 8px; align-items: start; }
+    .pb-remove { background: none; border: none; color: var(--text-dim); font-size: 16px; cursor: pointer; padding: 10px 4px; line-height: 1; }
+    .pb-remove:hover { color: var(--danger); }
 
     /* ── RESPONSIVE ─────────────────────────────────────────── */
     @media (max-width: 768px) {
@@ -361,8 +507,8 @@
 <!-- ══════════════════ AUTH SCREEN ══════════════════ -->
 <div id="auth-screen">
   <div class="auth-card">
-    <div class="auth-logo">PACECOACH</div>
-    <div class="auth-tagline">// athlete training platform</div>
+    <div class="auth-logo">PACECOACH <span class="badge-95 badge-95-lg"><svg width="9" height="14" viewBox="0 0 9 14" fill="none" style="flex-shrink:0;filter:drop-shadow(0 1px 1px rgba(0,0,0,0.3))"><polygon points="6,0 2,6 5,6 3,14 9,5 5.5,5" fill="rgba(255,255,255,0.9)"/></svg>95</span></div>
+    <div class="auth-tagline">// speed. I am speed.</div>
 
     <div class="auth-tabs">
       <button class="auth-tab active" onclick="switchAuthTab('login')">Sign In</button>
@@ -406,6 +552,22 @@
       </div>
       <div id="r-err" class="err-msg"></div>
       <button class="btn btn-primary btn-full" style="margin-top:8px" onclick="handleRegister()" id="r-btn">Create Account</button>
+    </div>
+
+    <!-- STEP 2: Add PBs (athletes only, optional) -->
+    <div id="tab-pbs" style="display:none">
+      <div class="reg-step-header">
+        <div class="reg-step-num">STEP 2 OF 2 — OPTIONAL</div>
+      </div>
+      <p style="font-size:13px;color:var(--text-muted);margin-bottom:16px;line-height:1.6">
+        Add your current personal bests. Your coach will see these. You can skip this and add them any time from the Records tab.
+      </p>
+      <div id="pb-reg-rows"></div>
+      <button class="btn btn-ghost btn-sm" style="margin-bottom:16px" onclick="addPBRegRow()">+ Add PB</button>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-ghost" style="flex:1" onclick="skipRegistrationPBs()">Skip for now</button>
+        <button class="btn btn-primary" style="flex:1" onclick="handleSaveRegistrationPBs()" id="pb-reg-btn">Save & Start</button>
+      </div>
     </div>
   </div>
 </div>
@@ -460,7 +622,7 @@
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Target Distance (km)</label>
+        <label id="s-dist-lbl">Target Distance (km)</label>
         <input type="number" id="s-dist" placeholder="e.g. 10" step="0.1" min="0" />
       </div>
       <div class="form-group">
@@ -470,7 +632,7 @@
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label>Target Pace (min/km)</label>
+        <label id="s-pace-lbl">Target Pace (min/km)</label>
         <input type="text" id="s-pace" placeholder="e.g. 4:30" />
         <div class="pace-hint">Format: MM:SS</div>
       </div>
@@ -522,7 +684,7 @@
     <input type="hidden" id="log-sid" />
     <div class="form-row">
       <div class="form-group">
-        <label>Actual Distance (km)</label>
+        <label id="log-dist-lbl">Actual Distance (km)</label>
         <input type="number" id="log-dist" placeholder="e.g. 10.2" step="0.1" min="0" />
       </div>
       <div class="form-group">
@@ -605,9 +767,13 @@
         <input type="date" id="race-date" />
       </div>
       <div class="form-group">
-        <label>Distance (km)</label>
-        <input type="number" id="race-dist" placeholder="e.g. 42.2" step="0.1" min="0" />
+        <label>Event</label>
+        <select id="race-event" onchange="onRaceEventChange('race')"><option value="">Custom / Other</option></select>
       </div>
+    </div>
+    <div class="form-group">
+      <label id="race-dist-lbl">Distance (km)</label>
+      <input type="number" id="race-dist" placeholder="e.g. 42.2" step="0.1" min="0" />
     </div>
     <div class="form-group">
       <label>Target Finish Time</label>
@@ -654,6 +820,90 @@
   </div>
 </div>
 
+<!-- Add Race (athlete self-service) -->
+<div class="modal-overlay" id="m-athlete-race">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title">ADD MY RACE</div>
+      <button class="modal-close" onclick="closeModal('m-athlete-race')">✕</button>
+    </div>
+    <p class="modal-note">Add your own race — your coach will see it too. Ka-chow!</p>
+    <div class="form-group">
+      <label>Race Name</label>
+      <input type="text" id="ar-name" placeholder="e.g. London Marathon 2026" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Race Date</label>
+        <input type="date" id="ar-date" />
+      </div>
+      <div class="form-group">
+        <label>Event</label>
+        <select id="ar-event" onchange="onRaceEventChange('ar')"><option value="">Custom / Other</option></select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label id="ar-dist-lbl">Distance (km)</label>
+      <input type="number" id="ar-dist" placeholder="e.g. 42.2" step="0.1" min="0" />
+    </div>
+    <div class="form-group">
+      <label>Target Finish Time</label>
+      <input type="text" id="ar-target" placeholder="e.g. 3:45:00 or 01:32:00" />
+      <div class="pace-hint">Format: HH:MM:SS or MM:SS</div>
+    </div>
+    <div class="form-group">
+      <label>Notes</label>
+      <textarea id="ar-notes" placeholder="Course profile, goals, anything relevant..." style="min-height:60px"></textarea>
+    </div>
+    <div id="ar-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-athlete-race')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleAthleteCreateRace()" id="ar-btn">Add Race</button>
+    </div>
+  </div>
+</div>
+
+<!-- Edit / Add Personal Best (athlete) -->
+<div class="modal-overlay" id="m-edit-pb">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title" id="pb-modal-title">EDIT PB</div>
+      <button class="modal-close" onclick="closeModal('m-edit-pb')">✕</button>
+    </div>
+    <input type="hidden" id="pb-event-hidden" />
+    <div class="form-group">
+      <label>Event</label>
+      <select id="pb-event"><option value="">Select event...</option></select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>PB Time</label>
+        <input type="text" id="pb-pb-time" placeholder="e.g. 3:45:00" />
+      </div>
+      <div class="form-group">
+        <label>PB Date</label>
+        <input type="date" id="pb-pb-date" />
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Season Best (SB)</label>
+        <input type="text" id="pb-sb-time" placeholder="e.g. 3:50:00" />
+      </div>
+      <div class="form-group">
+        <label>SB Date</label>
+        <input type="date" id="pb-sb-date" />
+      </div>
+    </div>
+    <div id="pb-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-edit-pb')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="pb-delete-btn" onclick="deleteEditingPB()" style="display:none">Delete</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleSavePB()" id="pb-save-btn">Save</button>
+    </div>
+  </div>
+</div>
+
 <!-- Session Detail (week view click) -->
 <div class="modal-overlay" id="m-detail">
   <div class="modal" style="max-width:540px">
@@ -665,8 +915,142 @@
   </div>
 </div>
 
+<!-- Mark Unavailable (athlete self-service) -->
+<div class="modal-overlay" id="m-unavailability">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title" id="unavail-title">MARK UNAVAILABLE</div>
+      <button class="modal-close" onclick="closeModal('m-unavailability')">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="unavail-start" onchange="syncUnavailEnd()" />
+    </div>
+    <div class="form-group" style="margin-bottom:8px">
+      <label style="display:flex;align-items:center;gap:8px;text-transform:none;letter-spacing:0;font-size:13px;font-weight:500;color:var(--text-muted)">
+        <input type="checkbox" id="unavail-multiday" onchange="toggleUnavailMultiday()" style="width:auto;margin:0" />
+        Multi-day period
+      </label>
+    </div>
+    <div class="form-group" id="unavail-end-group" style="display:none">
+      <label>End Date</label>
+      <input type="date" id="unavail-end" />
+    </div>
+    <div class="form-group">
+      <label>Reason (optional)</label>
+      <input type="text" id="unavail-reason" placeholder="e.g. Holiday, Injury recovery" />
+    </div>
+    <div id="unavail-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-unavailability')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="unavail-delete-btn" onclick="deleteUnavailability()" style="display:none">Delete</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleSaveUnavailability()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Log Extra Session (athlete self-service) -->
+<div class="modal-overlay" id="m-extra-session">
+  <div class="modal" style="max-width:540px">
+    <div class="modal-header">
+      <div class="modal-title">LOG EXTRA SESSION</div>
+      <button class="modal-close" onclick="closeModal('m-extra-session')">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Title</label>
+      <input type="text" id="es-title" placeholder="e.g. Parkrun, Strength workout" />
+    </div>
+    <div class="form-group">
+      <label>Session Type</label>
+      <select id="es-type">
+        <option value="easy">Easy</option>
+        <option value="tempo">Tempo</option>
+        <option value="intervals">Intervals</option>
+        <option value="long">Long</option>
+        <option value="recovery">Recovery</option>
+        <option value="race">Race</option>
+        <option value="strength">Strength</option>
+        <option value="cross">Cross Training</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label>Date</label>
+      <input type="date" id="es-date" />
+    </div>
+    <div class="form-group">
+      <label>Description (optional)</label>
+      <textarea id="es-desc" placeholder="Notes about the session..."></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label id="es-dist-lbl">Distance</label>
+        <input type="number" id="es-dist" step="0.1" placeholder="e.g. 5.0" />
+      </div>
+      <div class="form-group">
+        <label>Duration (minutes)</label>
+        <input type="number" id="es-dur" placeholder="e.g. 45" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label id="es-pace-lbl">Pace (optional)</label>
+      <input type="text" id="es-pace" placeholder="MM:SS" />
+      <div class="pace-hint" id="es-pace-hint"></div>
+    </div>
+    <div id="es-err" class="err-msg"></div>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-extra-session')">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleSaveExtraSession()">Log Session</button>
+    </div>
+  </div>
+</div>
+
+<!-- Create / Edit Group (coach) -->
+<div class="modal-overlay" id="m-group">
+  <div class="modal" style="max-width:440px">
+    <div class="modal-header">
+      <div class="modal-title" id="group-modal-title">CREATE GROUP</div>
+      <button class="modal-close" onclick="closeModal('m-group')">✕</button>
+    </div>
+    <div class="form-group">
+      <label>Group Name</label>
+      <input type="text" id="group-name" placeholder="e.g. Marathon Squad" />
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Colour</label>
+        <input type="color" id="group-colour" value="#6366F1" style="height:42px;padding:4px 8px;cursor:pointer" />
+      </div>
+      <div class="form-group">
+        <label>Emoji</label>
+        <input type="text" id="group-emoji" placeholder="🏃" maxlength="2" style="font-size:20px;text-align:center" />
+      </div>
+    </div>
+    <div id="group-err" class="err-msg"></div>
+    <button class="btn btn-ghost" id="group-members-btn" onclick="closeModal('m-group');openGroupMembers(editingGroupId)" style="display:none;width:100%;margin-top:8px">👥 Manage Members</button>
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" onclick="closeModal('m-group')">Cancel</button>
+      <button class="btn btn-danger btn-sm" id="group-delete-btn" onclick="handleDeleteGroup()" style="display:none">Delete Group</button>
+      <button class="btn btn-primary" style="flex:1" onclick="handleSaveGroup()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Group Members (coach) -->
+<div class="modal-overlay" id="m-group-members">
+  <div class="modal" style="max-width:480px">
+    <div class="modal-header">
+      <div class="modal-title" id="group-members-title">MANAGE MEMBERS</div>
+      <button class="modal-close" onclick="closeModal('m-group-members')">✕</button>
+    </div>
+    <div id="group-members-body"></div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- Ka-chow Sound -->
+<audio id="ka-chow-sound" src="audio.mp3"></audio>
 
 <script>
 // ══════════════════════════════════════════════════
@@ -675,6 +1059,35 @@
 // ══════════════════════════════════════════════════
 const SUPABASE_URL      = 'https://tnuibjibypylyynduyqc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRudWliamlieXB5bHl5bmR1eXFjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNTk5NjAsImV4cCI6MjA5MDczNTk2MH0.pWEHsrns8A2H8MhBpSoLLN80li_etamdQStER0OX_W4';
+
+// ══════════════════════════════════════════════════
+//  STANDARD EVENTS
+// ══════════════════════════════════════════════════
+const STANDARD_EVENTS = [
+  { label: '800m',          distance_m: 800,   distance_km: 0.8     },
+  { label: '1500m',         distance_m: 1500,  distance_km: 1.5     },
+  { label: '3000m',         distance_m: 3000,  distance_km: 3.0     },
+  { label: '5000m',         distance_m: 5000,  distance_km: 5.0     },
+  { label: '10000m',        distance_m: 10000, distance_km: 10.0    },
+  { label: '5km',           distance_m: 5000,  distance_km: 5.0     },
+  { label: '10km',          distance_m: 10000, distance_km: 10.0    },
+  { label: '5 miles',       distance_m: 8047,  distance_km: 8.047   },
+  { label: '10 miles',      distance_m: 16093, distance_km: 16.093  },
+  { label: 'Half Marathon', distance_m: 21097, distance_km: 21.0975 },
+  { label: 'Marathon',      distance_m: 42195, distance_km: 42.195  },
+];
+
+function eventSelectOptions(selectedVal = '') {
+  return `<option value="">Custom / Other</option>
+    <optgroup label="Track">
+      ${['800m','1500m','3000m','5000m','10000m'].map(e =>
+        `<option value="${e}" ${selectedVal===e?'selected':''}>${e}</option>`).join('')}
+    </optgroup>
+    <optgroup label="Road">
+      ${['5km','10km','5 miles','10 miles','Half Marathon','Marathon'].map(e =>
+        `<option value="${e}" ${selectedVal===e?'selected':''}>${e}</option>`).join('')}
+    </optgroup>`;
+}
 
 // ══════════════════════════════════════════════════
 //  STATE
@@ -687,17 +1100,39 @@ let athletes       = [];
 let sessions       = [];
 let logs           = {};
 let races          = [];
+let personalBests  = [];
+let unavailability = [];
+let groups         = [];   // training_groups rows
+let groupMembers   = [];   // group_members rows (all for coach's groups)
+let feedPosts      = [];   // feed_posts rows
+let feedReactions  = {};   // keyed by post_id → array of reaction rows
+
+// Temp storage during registration
+let pendingRegEmail = null;
+let pendingRegPass  = null;
 
 // View state
-let selectedAthId  = 'all';
-let athleteTab     = 'upcoming';
-let currentView    = 'list';        // 'list' | 'week' | 'progress'
-let weekStart      = getMonday(new Date());
+let selectedAthId   = 'all';
+let selectedGroupId = null;  // null = no group filter, uuid = group selected
+let athleteTab      = 'upcoming';
+let currentView     = 'list';  // 'list' | 'week' | 'progress' | 'records' | 'feed'
+let feedTab         = 'all';   // 'all' | group_id
+let weekStart       = getMonday(new Date());
+
+// Unit preference (km vs miles)
+let usesMiles = localStorage.getItem('pacecoach_miles') === 'true';
+const KM_TO_MI = 0.621371;
+function displayDist(km) { return km == null ? null : usesMiles ? Math.round(km * KM_TO_MI * 100) / 100 : km; }
+function distUnit() { return usesMiles ? 'mi' : 'km'; }
+function paceUnit() { return usesMiles ? 'min/mi' : 'min/km'; }
+function toggleUnits() { usesMiles = !usesMiles; localStorage.setItem('pacecoach_miles', usesMiles); renderApp(); }
 
 // Modal state
-let dupSourceId    = null;
-let currentRating  = 0;
-let sidebarOpen    = false;
+let dupSourceId      = null;
+let currentRating    = 0;
+let sidebarOpen      = false;
+let editingUnavailId = null;
+let editingGroupId   = null;
 
 // Chart instances (so we can destroy before re-creating)
 let chartInstances = {};
@@ -747,7 +1182,66 @@ async function handleRegister() {
   const { error: pe } = await sb.from('profiles')
     .insert({ id: data.user.id, full_name: name, email: email.toLowerCase(), role });
   if (pe) { errEl.textContent = pe.message; setLoading(btn, false, 'Create Account'); return; }
-  await sb.auth.signInWithPassword({ email, password: pass });
+  setLoading(btn, false, 'Create Account');
+
+  if (role === 'athlete') {
+    // Show optional PB entry step
+    pendingRegEmail = email;
+    pendingRegPass  = pass;
+    el('tab-register').style.display = 'none';
+    document.querySelector('.auth-tabs').style.display = 'none';
+    el('tab-pbs').style.display = 'block';
+    el('pb-reg-rows').innerHTML = '';
+    addPBRegRow();
+  } else {
+    await sb.auth.signInWithPassword({ email, password: pass });
+  }
+}
+
+function addPBRegRow() {
+  const row = document.createElement('div');
+  row.className = 'pb-entry-row';
+  row.innerHTML = `
+    <div class="form-group" style="margin:0">
+      <select class="pb-reg-event" style="font-size:13px">
+        ${eventSelectOptions()}
+      </select>
+    </div>
+    <div class="form-group" style="margin:0">
+      <input type="text" class="pb-reg-time" placeholder="e.g. 3:45:00" style="font-size:13px" />
+    </div>
+    <button class="pb-remove" onclick="this.parentElement.remove()">✕</button>
+  `;
+  el('pb-reg-rows').appendChild(row);
+}
+
+async function handleSaveRegistrationPBs() {
+  const btn = el('pb-reg-btn');
+  const rows = document.querySelectorAll('.pb-entry-row');
+  const entries = [];
+  rows.forEach(row => {
+    const event = row.querySelector('.pb-reg-event').value;
+    const time  = row.querySelector('.pb-reg-time').value.trim();
+    if (event && time) entries.push({ event, time });
+  });
+
+  setLoading(btn, true);
+  // Sign in first so we have auth context for the insert
+  const { data: signInData } = await sb.auth.signInWithPassword({ email: pendingRegEmail, password: pendingRegPass });
+  if (entries.length && signInData?.user) {
+    const rows = entries.map(e => {
+      const info = STANDARD_EVENTS.find(x => x.label === e.event);
+      return { athlete_id: signInData.user.id, event: e.event, distance_m: info?.distance_m || 0, pb_time: e.time, pb_date: todayStr() };
+    });
+    await sb.from('personal_bests').insert(rows);
+  }
+  setLoading(btn, false, 'Save & Start');
+  pendingRegEmail = pendingRegPass = null;
+}
+
+async function skipRegistrationPBs() {
+  await sb.auth.signInWithPassword({ email: pendingRegEmail, password: pendingRegPass });
+  pendingRegEmail = pendingRegPass = null;
 }
 
 async function handleLogout() {
@@ -756,11 +1250,26 @@ async function handleLogout() {
   athletes = []; sessions = []; logs = {}; races = [];
   el('app').style.display = 'none';
   el('auth-screen').style.display = 'flex';
+
+  // Stop any playing audio
+  const audio = el('ka-chow-sound');
+  if (audio) {
+    audio.pause();
+    audio.currentTime = 0;
+  }
 }
 
 // ══════════════════════════════════════════════════
 //  DATA LOADING
 // ══════════════════════════════════════════════════
+function getActiveAthleteIds() {
+  if (selectedAthId !== 'all') return [selectedAthId];
+  if (selectedGroupId) {
+    return groupMembers.filter(m => m.group_id === selectedGroupId && !m.left_at).map(m => m.athlete_id);
+  }
+  return athletes.map(a => a.id);
+}
+
 async function loadAthletes() {
   const { data } = await sb.from('coach_athletes')
     .select('athlete_id, profiles!coach_athletes_athlete_id_fkey(id, full_name, email)')
@@ -769,10 +1278,11 @@ async function loadAthletes() {
 }
 
 async function loadCoachSessions() {
+  const athIds = getActiveAthleteIds();
+  if (!athIds.length) { sessions = []; logs = {}; return; }
   let q = sb.from('sessions').select('*')
-    .eq('coach_id', currentUser.id)
+    .in('athlete_id', athIds)
     .order('scheduled_date', { ascending: true });
-  if (selectedAthId !== 'all') q = q.eq('athlete_id', selectedAthId);
   const { data } = await q;
   sessions = data || [];
   await loadLogs(sessions.map(s => s.id));
@@ -795,16 +1305,587 @@ async function loadLogs(ids) {
 
 async function loadRaces() {
   const isCoach = currentProfile.role === 'coach';
-  let q = sb.from('races').select('*')
-    .order('race_date', { ascending: true });
   if (isCoach) {
-    q = q.eq('coach_id', currentUser.id);
-    if (selectedAthId !== 'all') q = q.eq('athlete_id', selectedAthId);
+    const athIds = getActiveAthleteIds();
+    if (!athIds.length) { races = []; return; }
+    let q = sb.from('races').select('*')
+      .in('athlete_id', athIds)
+      .order('race_date', { ascending: true });
+    const { data } = await q;
+    races = data || [];
   } else {
-    q = q.eq('athlete_id', currentUser.id);
+    const { data } = await sb.from('races').select('*')
+      .eq('athlete_id', currentUser.id)
+      .order('race_date', { ascending: true });
+    races = data || [];
   }
-  const { data } = await q;
-  races = data || [];
+}
+
+async function loadPersonalBests() {
+  const isCoach = currentProfile.role === 'coach';
+  if (isCoach) {
+    const athIds = getActiveAthleteIds();
+    if (!athIds.length) { personalBests = []; return; }
+    const { data } = await sb.from('personal_bests').select('*')
+      .in('athlete_id', athIds).order('distance_m', { ascending: true });
+    personalBests = data || [];
+  } else {
+    const { data } = await sb.from('personal_bests').select('*')
+      .eq('athlete_id', currentUser.id).order('distance_m', { ascending: true });
+    personalBests = data || [];
+  }
+}
+
+async function loadUnavailability() {
+  if (currentProfile.role === 'coach') {
+    const athIds = getActiveAthleteIds();
+    if (!athIds.length) { unavailability = []; return; }
+    const { data } = await sb.from('unavailability').select('*').in('athlete_id', athIds);
+    unavailability = data || [];
+  } else {
+    const { data } = await sb.from('unavailability').select('*').eq('athlete_id', currentUser.id);
+    unavailability = data || [];
+  }
+}
+
+async function loadGroups() {
+  if (currentProfile.role === 'coach') {
+    const { data: grps } = await sb.from('training_groups').select('*')
+      .eq('coach_id', currentUser.id).order('name');
+    groups = grps || [];
+    if (!groups.length) { groupMembers = []; return; }
+    const { data: mems } = await sb.from('group_members').select('*')
+      .in('group_id', groups.map(g => g.id));
+    groupMembers = mems || [];
+  } else {
+    // Athlete: load groups they belong to (not left)
+    const { data: mems } = await sb.from('group_members').select('*')
+      .eq('athlete_id', currentUser.id).is('left_at', null);
+    groupMembers = mems || [];
+    if (!groupMembers.length) { groups = []; return; }
+    const { data: grps } = await sb.from('training_groups').select('*')
+      .in('id', groupMembers.map(m => m.group_id)).order('name');
+    groups = grps || [];
+  }
+}
+
+async function loadFeed() {
+  const isCoach = currentProfile.role === 'coach';
+  let postIds = [];
+
+  if (isCoach) {
+    // Coach sees all posts they authored + all posts targeting their groups/athletes
+    const myGroupIds = groups.map(g => g.id);
+    const myAthIds   = athletes.map(a => a.id);
+    const { data } = await sb.from('feed_posts').select('*')
+      .order('created_at', { ascending: false }).limit(200);
+    // Filter client-side: author is coach, or target is one of their groups/athletes, or target_type=all
+    feedPosts = (data || []).filter(p =>
+      p.author_id === currentUser.id ||
+      p.target_type === 'all' ||
+      (p.target_type === 'group' && myGroupIds.includes(p.target_id)) ||
+      (p.target_type === 'athlete' && myAthIds.includes(p.target_id)) ||
+      myAthIds.includes(p.author_id)
+    );
+  } else {
+    // Athlete: posts visible to them
+    const myGroupIds = groups.map(g => g.id);
+    const { data } = await sb.from('feed_posts').select('*')
+      .order('created_at', { ascending: false }).limit(200);
+    feedPosts = (data || []).filter(p => {
+      if (p.target_type === 'all') return true;
+      if (p.target_type === 'athlete' && p.target_id === currentUser.id) return true;
+      if (p.target_type === 'group' && myGroupIds.includes(p.target_id)) {
+        // Check author is still a member of this group (not left)
+        if (p.author_id === currentUser.id) return true; // own posts always visible
+        // Check if author is still an active member
+        const authorMem = groupMembers.find(m => m.group_id === p.target_id && m.athlete_id === p.author_id);
+        if (!authorMem) {
+          // Author might be coach
+          return true;
+        }
+        return authorMem.left_at === null || authorMem.left_at === undefined;
+      }
+      return false;
+    });
+  }
+
+  if (!feedPosts.length) { feedReactions = {}; return; }
+  postIds = feedPosts.map(p => p.id);
+  const { data: rxns } = await sb.from('feed_reactions').select('*').in('post_id', postIds);
+  feedReactions = {};
+  (rxns || []).forEach(r => {
+    if (!feedReactions[r.post_id]) feedReactions[r.post_id] = [];
+    feedReactions[r.post_id].push(r);
+  });
+}
+
+// Auto-post a feed entry (called from PB/session/race hooks)
+async function autoPost(postType, content, targetType, targetId, metadata) {
+  await sb.from('feed_posts').insert({
+    author_id: currentUser.id,
+    post_type: postType,
+    content,
+    target_type: targetType || 'all',
+    target_id: targetId || null,
+    metadata: { ...(metadata || {}), author_name: currentProfile.full_name },
+  });
+}
+
+// ══════════════════════════════════════════════════
+//  PERSONAL BESTS — EDIT / SAVE / DELETE
+// ══════════════════════════════════════════════════
+function timeToSeconds(t) {
+  if (!t) return null;
+  const p = t.trim().split(':').map(Number);
+  if (p.length === 3) return p[0] * 3600 + p[1] * 60 + (p[2] || 0);
+  if (p.length === 2) return p[0] * 60 + (p[1] || 0);
+  return null;
+}
+
+function openEditPB(eventLabel) {
+  const existing = personalBests.find(p => p.event === eventLabel);
+  el('pb-modal-title').textContent = existing ? `EDIT: ${eventLabel}` : `ADD: ${eventLabel}`;
+  el('pb-event').innerHTML = eventSelectOptions(eventLabel);
+  el('pb-event-hidden').value = existing?.id || '';
+  el('pb-pb-time').value  = existing?.pb_time || '';
+  el('pb-pb-date').value  = existing?.pb_date || '';
+  el('pb-sb-time').value  = existing?.sb_time || '';
+  el('pb-sb-date').value  = existing?.sb_date || '';
+  el('pb-err').textContent = '';
+  el('pb-delete-btn').style.display = existing ? 'block' : 'none';
+  openModal('m-edit-pb');
+}
+
+function openAddPB() {
+  el('pb-modal-title').textContent = 'ADD PB';
+  el('pb-event').innerHTML = eventSelectOptions();
+  el('pb-event-hidden').value = '';
+  ['pb-pb-time','pb-pb-date','pb-sb-time','pb-sb-date'].forEach(id => el(id).value = '');
+  el('pb-err').textContent = '';
+  el('pb-delete-btn').style.display = 'none';
+  openModal('m-edit-pb');
+}
+
+async function handleSavePB() {
+  const eventVal  = el('pb-event').value;
+  const pbTime    = val('pb-pb-time'), pbDate = val('pb-pb-date');
+  const sbTime    = val('pb-sb-time'), sbDate = val('pb-sb-date');
+  const existingId = el('pb-event-hidden').value;
+  const errEl = el('pb-err'), btn = el('pb-save-btn');
+  errEl.textContent = '';
+  if (!eventVal)  { errEl.textContent = 'Please select an event.'; return; }
+  if (!pbTime && !sbTime) { errEl.textContent = 'Enter at least a PB or SB time.'; return; }
+
+  const info = STANDARD_EVENTS.find(e => e.label === eventVal);
+  const payload = {
+    athlete_id: currentUser.id, event: eventVal,
+    distance_m: info?.distance_m || 0,
+    pb_time: pbTime || null, pb_date: pbDate || null,
+    sb_time: sbTime || null, sb_date: sbDate || null,
+  };
+
+  setLoading(btn, true);
+  const { error } = existingId
+    ? await sb.from('personal_bests').update(payload).eq('id', existingId)
+    : await sb.from('personal_bests').upsert(payload, { onConflict: 'athlete_id,event' });
+  setLoading(btn, false, 'Save');
+  if (error) { errEl.textContent = error.message; return; }
+  closeModal('m-edit-pb');
+  toast('PB saved!', 'ok');
+  await loadPersonalBests();
+  renderApp();
+}
+
+async function deleteEditingPB() {
+  const id = el('pb-event-hidden').value;
+  if (!id || !confirm('Delete this PB record?')) return;
+  await sb.from('personal_bests').delete().eq('id', id);
+  closeModal('m-edit-pb');
+  toast('PB removed');
+  await loadPersonalBests();
+  renderApp();
+}
+
+async function checkAndUpdatePB(raceId, actualTime, status) {
+  if (status !== 'completed' || !actualTime) return;
+  const race = races.find(r => r.id === raceId);
+  if (!race?.event) return;
+
+  const newSecs = timeToSeconds(actualTime);
+  if (!newSecs) return;
+
+  const raceYear = new Date(race.race_date + 'T00:00:00').getFullYear();
+  const isSameSeason = raceYear === new Date().getFullYear();
+
+  const existing = personalBests.find(p => p.event === race.event);
+  const pbSecs = timeToSeconds(existing?.pb_time);
+  const sbSecs = timeToSeconds(existing?.sb_time);
+
+  const isNewPB = !pbSecs || newSecs < pbSecs;
+  const isNewSB = isSameSeason && (!sbSecs || newSecs < sbSecs);
+  if (!isNewPB && !isNewSB) return;
+
+  const info = STANDARD_EVENTS.find(e => e.label === race.event);
+  const updates = {
+    athlete_id: currentUser.id, event: race.event,
+    distance_m: info?.distance_m || 0,
+  };
+  if (isNewPB) { updates.pb_time = actualTime; updates.pb_date = race.race_date; updates.pb_race_id = raceId; }
+  if (isNewSB) { updates.sb_time = actualTime; updates.sb_date = race.race_date; updates.sb_race_id = raceId; }
+
+  await sb.from('personal_bests').upsert(updates, { onConflict: 'athlete_id,event' });
+  await loadPersonalBests();
+  if (isNewPB) {
+    toast(`🏆 NEW PB! ${race.event} — ${actualTime}`, 'ok');
+    // Auto-post to all groups the athlete is in
+    const myGroupIds = groupMembers.filter(m => m.athlete_id === currentUser.id && !m.left_at).map(m => m.group_id);
+    const prev = existing?.pb_time ? ` (was ${existing.pb_time})` : '';
+    const postContent = `🏆 New PB — ${race.event} in ${actualTime}${prev}!`;
+    if (myGroupIds.length) {
+      for (const gid of myGroupIds) await autoPost('auto_pb', postContent, 'group', gid, { event: race.event, time: actualTime });
+    } else {
+      await autoPost('auto_pb', postContent, 'all', null, { event: race.event, time: actualTime });
+    }
+  } else {
+    toast(`New Season Best! ${race.event} — ${actualTime}`, 'ok');
+    const myGroupIds = groupMembers.filter(m => m.athlete_id === currentUser.id && !m.left_at).map(m => m.group_id);
+    const postContent = `⚡ New Season Best — ${race.event} in ${actualTime}!`;
+    if (myGroupIds.length) {
+      for (const gid of myGroupIds) await autoPost('auto_sb', postContent, 'group', gid, { event: race.event, time: actualTime });
+    } else {
+      await autoPost('auto_sb', postContent, 'all', null, { event: race.event, time: actualTime });
+    }
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  ATHLETE — UNAVAILABILITY
+// ══════════════════════════════════════════════════
+function syncUnavailEnd() {
+  // Keep end date in sync with start if single-day (or end is empty)
+  if (!el('unavail-multiday').checked) {
+    el('unavail-end').value = el('unavail-start').value;
+  }
+}
+
+function toggleUnavailMultiday() {
+  const isMulti = el('unavail-multiday').checked;
+  el('unavail-end-group').style.display = isMulti ? 'block' : 'none';
+  if (!isMulti) el('unavail-end').value = el('unavail-start').value;
+}
+
+function openAddUnavailability() {
+  editingUnavailId = null;
+  el('unavail-start').value = todayStr();
+  el('unavail-end').value = todayStr();
+  el('unavail-reason').value = '';
+  el('unavail-err').textContent = '';
+  el('unavail-title').textContent = 'MARK UNAVAILABLE';
+  el('unavail-delete-btn').style.display = 'none';
+  el('unavail-multiday').checked = false;
+  el('unavail-end-group').style.display = 'none';
+  openModal('m-unavailability');
+}
+
+function openEditUnavailability(id) {
+  const u = unavailability.find(x => x.id === id);
+  if (!u) return;
+  editingUnavailId = id;
+  const isMulti = u.start_date !== u.end_date;
+  el('unavail-start').value = u.start_date;
+  el('unavail-end').value = u.end_date;
+  el('unavail-reason').value = u.reason || '';
+  el('unavail-err').textContent = '';
+  el('unavail-title').textContent = 'EDIT UNAVAILABILITY';
+  el('unavail-delete-btn').style.display = 'inline-block';
+  el('unavail-multiday').checked = isMulti;
+  el('unavail-end-group').style.display = isMulti ? 'block' : 'none';
+  openModal('m-unavailability');
+}
+
+async function duplicateUnavailability(id) {
+  const u = unavailability.find(x => x.id === id);
+  if (!u) return;
+  const { error } = await sb.from('unavailability').insert({
+    athlete_id: currentUser.id,
+    start_date: u.start_date,
+    end_date: u.end_date,
+    reason: u.reason || null
+  });
+  if (error) { toast('Error duplicating: ' + error.message, 'err'); return; }
+  toast('✓ Unavailability duplicated — edit to change dates');
+  await loadUnavailability();
+  renderApp();
+}
+
+async function handleSaveUnavailability() {
+  const start = val('unavail-start');
+  const end = val('unavail-end');
+  const reason = val('unavail-reason');
+  const errEl = el('unavail-err');
+  errEl.textContent = '';
+
+  if (!start || !end) { errEl.textContent = 'Please select start and end dates.'; return; }
+  if (start > end) { errEl.textContent = 'End date must be after start date.'; return; }
+
+  if (editingUnavailId) {
+    // Update existing
+    const { error } = await sb.from('unavailability')
+      .update({ start_date: start, end_date: end, reason: reason || null })
+      .eq('id', editingUnavailId);
+    if (error) { errEl.textContent = error.message; return; }
+  } else {
+    // Create new
+    const { error } = await sb.from('unavailability').insert({
+      athlete_id: currentUser.id,
+      start_date: start,
+      end_date: end,
+      reason: reason || null
+    });
+    if (error) { errEl.textContent = error.message; return; }
+  }
+  closeModal('m-unavailability');
+  toast('✓ Availability updated');
+  await loadUnavailability();
+  renderApp();
+}
+
+async function deleteUnavailability() {
+  if (!editingUnavailId || !confirm('Delete this unavailability period?')) return;
+  await sb.from('unavailability').delete().eq('id', editingUnavailId);
+  closeModal('m-unavailability');
+  toast('Unavailability removed');
+  await loadUnavailability();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  ATHLETE — LOG EXTRA SESSION
+// ══════════════════════════════════════════════════
+function openAddExtraSession() {
+  el('es-title').value = '';
+  el('es-type').value = 'easy';
+  el('es-date').value = todayStr();
+  el('es-desc').value = '';
+  el('es-dist').value = '';
+  el('es-dur').value = '';
+  el('es-pace').value = '';
+  el('es-err').textContent = '';
+  el('es-dist-lbl').textContent = `Distance (${distUnit()})`;
+  el('es-pace-lbl').textContent = `Pace (optional, ${paceUnit()})`;
+  el('es-pace-hint').textContent = `e.g. 5:30 ${paceUnit()}`;
+  openModal('m-extra-session');
+}
+
+async function handleSaveExtraSession() {
+  const title = val('es-title');
+  const type = val('es-type');
+  const date = val('es-date');
+  const desc = val('es-desc');
+  const dist = val('es-dist');
+  const dur = val('es-dur');
+  const pace = val('es-pace');
+  const errEl = el('es-err');
+  errEl.textContent = '';
+
+  if (!title) { errEl.textContent = 'Please enter a session title.'; return; }
+  if (!date) { errEl.textContent = 'Please select a date.'; return; }
+
+  const { error } = await sb.from('sessions').insert({
+    coach_id: currentUser.id,
+    athlete_id: currentUser.id,
+    title,
+    session_type: type,
+    scheduled_date: date,
+    description: desc || null,
+    distance_km: dist ? Math.round((parseFloat(dist) / (usesMiles ? KM_TO_MI : 1)) * 100) / 100 : null,
+    duration_min: dur ? parseInt(dur) : null,
+    pace_target: pace || null,
+    is_extra: true
+  });
+
+  if (error) { errEl.textContent = error.message; return; }
+  closeModal('m-extra-session');
+  toast('✓ Session logged');
+  await loadAthleteSessions();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  COACH — TRAINING GROUPS
+// ══════════════════════════════════════════════════
+function openCreateGroup() {
+  editingGroupId = null;
+  el('group-modal-title').textContent = 'CREATE GROUP';
+  el('group-name').value = '';
+  el('group-colour').value = '#6366F1';
+  el('group-emoji').value = '🏃';
+  el('group-err').textContent = '';
+  el('group-delete-btn').style.display = 'none';
+  el('group-members-btn').style.display = 'none';
+  openModal('m-group');
+}
+
+function openEditGroup(id) {
+  const g = groups.find(x => x.id === id);
+  if (!g) return;
+  editingGroupId = id;
+  el('group-modal-title').textContent = 'EDIT GROUP';
+  el('group-name').value = g.name;
+  el('group-colour').value = g.colour || '#6366F1';
+  el('group-emoji').value = g.emoji || '🏃';
+  el('group-err').textContent = '';
+  el('group-delete-btn').style.display = 'inline-block';
+  el('group-members-btn').style.display = 'block';
+  openModal('m-group');
+}
+
+async function handleSaveGroup() {
+  const name   = val('group-name');
+  const colour = el('group-colour').value;
+  const emoji  = val('group-emoji') || '🏃';
+  const errEl  = el('group-err');
+  errEl.textContent = '';
+  if (!name) { errEl.textContent = 'Group name is required.'; return; }
+
+  if (editingGroupId) {
+    const { error } = await sb.from('training_groups')
+      .update({ name, colour, emoji }).eq('id', editingGroupId);
+    if (error) { errEl.textContent = error.message; return; }
+    closeModal('m-group');
+    toast('✓ Group updated');
+    await loadGroups();
+    renderApp();
+  } else {
+    const { data, error } = await sb.from('training_groups')
+      .insert({ coach_id: currentUser.id, name, colour, emoji })
+      .select().single();
+    if (error) { errEl.textContent = error.message; return; }
+    closeModal('m-group');
+    toast('✓ Group created — now add some athletes');
+    await loadGroups();
+    renderApp();
+    // Immediately open the members modal so the coach can add athletes
+    openGroupMembers(data.id);
+  }
+}
+
+async function handleDeleteGroup() {
+  if (!editingGroupId) return;
+  const g = groups.find(x => x.id === editingGroupId);
+  if (!confirm(`Delete "${g?.name}"? Members will be removed but athletes stay on your roster.`)) return;
+  await sb.from('training_groups').delete().eq('id', editingGroupId);
+  closeModal('m-group');
+  toast('Group deleted');
+  selectedGroupId = null;
+  await loadGroups();
+  renderApp();
+}
+
+function openGroupMembers(groupId) {
+  const g = groups.find(x => x.id === groupId);
+  if (!g) return;
+  el('group-members-title').textContent = `${g.emoji} ${g.name.toUpperCase()} — MEMBERS`;
+  renderGroupMembersBody(groupId);
+  openModal('m-group-members');
+}
+
+function renderGroupMembersBody(groupId) {
+  const members = groupMembers.filter(m => m.group_id === groupId && !m.left_at);
+  const memberIds = members.map(m => m.athlete_id);
+  const memberAthletes = athletes.filter(a => memberIds.includes(a.id));
+  const nonMembers = athletes.filter(a => !memberIds.includes(a.id));
+
+  el('group-members-body').innerHTML = `
+    <div style="margin-bottom:16px">
+      <div class="sidebar-heading" style="padding:0 0 8px">CURRENT MEMBERS</div>
+      ${memberAthletes.length === 0
+        ? `<div style="font-size:12px;color:var(--text-dim);padding:8px 0">No members yet.</div>`
+        : memberAthletes.map(a => `
+          <div style="display:flex;align-items:center;gap:10px;padding:8px;background:var(--surface2);border-radius:var(--r);margin-bottom:4px">
+            <div class="avatar av-sm">${initials(a.full_name)}</div>
+            <div style="flex:1;font-size:13px;font-weight:500">${a.full_name}</div>
+            <button class="btn btn-danger btn-xs" onclick="removeFromGroup('${groupId}','${a.id}')">Remove</button>
+          </div>`).join('')}
+    </div>
+    ${nonMembers.length > 0 ? `
+    <div>
+      <div class="sidebar-heading" style="padding:0 0 8px">ADD TO GROUP</div>
+      ${nonMembers.map(a => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:var(--r);margin-bottom:4px">
+          <div class="avatar av-sm">${initials(a.full_name)}</div>
+          <div style="flex:1;font-size:13px;font-weight:500">${a.full_name}</div>
+          <button class="btn btn-ghost btn-xs" style="border-color:var(--success);color:var(--success)" onclick="addToGroup('${groupId}','${a.id}')">+ Add</button>
+        </div>`).join('')}
+    </div>` : ''}
+  `;
+}
+
+async function addToGroup(groupId, athleteId) {
+  const { error } = await sb.from('group_members').upsert(
+    { group_id: groupId, athlete_id: athleteId, left_at: null, muted_at: null },
+    { onConflict: 'group_id,athlete_id' }
+  );
+  if (error) { toast(error.message, 'err'); return; }
+  await loadGroups();
+  renderGroupMembersBody(groupId);
+  renderApp();
+}
+
+async function removeFromGroup(groupId, athleteId) {
+  await sb.from('group_members')
+    .delete().eq('group_id', groupId).eq('athlete_id', athleteId);
+  await loadGroups();
+  renderGroupMembersBody(groupId);
+  renderApp();
+}
+
+// Athlete: mute a group feed (stays member, coach posts still come through)
+async function muteGroup(groupId) {
+  await sb.from('group_members')
+    .update({ muted_at: new Date().toISOString() })
+    .eq('group_id', groupId).eq('athlete_id', currentUser.id);
+  toast('Group muted — coach messages still visible');
+  await loadGroups();
+  renderApp();
+}
+
+async function unmuteGroup(groupId) {
+  await sb.from('group_members')
+    .update({ muted_at: null })
+    .eq('group_id', groupId).eq('athlete_id', currentUser.id);
+  toast('Group unmuted');
+  await loadGroups();
+  renderApp();
+}
+
+// Athlete: leave a group (history hidden until re-added)
+async function leaveGroup(groupId) {
+  const g = groups.find(x => x.id === groupId);
+  if (!confirm(`Leave "${g?.name}"? Your past posts will be hidden from the group. A coach can re-add you.`)) return;
+  await sb.from('group_members')
+    .update({ left_at: new Date().toISOString() })
+    .eq('group_id', groupId).eq('athlete_id', currentUser.id);
+  // Auto-post: notify group that athlete left
+  await autoPost('auto_left', `left ${g?.name}`, 'group', groupId, { group_name: g?.name });
+  toast(`You've left ${g?.name}`);
+  if (feedTab === groupId) feedTab = 'all';
+  await loadGroups();
+  await loadFeed();
+  renderApp();
+}
+
+async function selectGroup(id) {
+  selectedGroupId = id;
+  selectedAthId = 'all';
+  sidebarOpen = false;
+  await loadCoachSessions();
+  await loadRaces();
+  await loadPersonalBests();
+  await loadUnavailability();
+  await loadFeed();
+  renderApp();
 }
 
 // ══════════════════════════════════════════════════
@@ -838,6 +1919,8 @@ function openCreateSession() {
   ['s-title','s-desc','s-dist','s-dur','s-pace','s-hr','s-notes'].forEach(id => el(id).value = '');
   el('s-date').value = todayStr();
   el('s-type').value = 'easy';
+  el('s-dist-lbl').textContent = `Target Distance (${distUnit()})`;
+  el('s-pace-lbl').textContent = `Target Pace (${paceUnit()})`;
   populateAthleteCheckboxes('s-ath-list', selectedAthId !== 'all' ? [selectedAthId] : []);
   openModal('m-session');
 }
@@ -885,12 +1968,22 @@ async function handleCreateSession() {
   if (!title)              { errEl.textContent = 'Session title is required.'; return; }
   if (!date)               { errEl.textContent = 'Please set a date.'; return; }
 
+  // Check if any selected athlete has unavailability on that date
+  const blocked = athleteIds.filter(aid =>
+    unavailability.some(u => u.athlete_id === aid && u.start_date <= date && u.end_date >= date)
+  );
+  if (blocked.length) {
+    const names = blocked.map(aid => athletes.find(a => a.id === aid)?.full_name).filter(Boolean).join(', ');
+    const proceed = confirm(`⚠️ ${names} has marked ${blocked.length > 1 ? 'these dates' : 'this date'} as unavailable. Schedule anyway?`);
+    if (!proceed) return;
+  }
+
   setLoading(btn, true);
   const rows = athleteIds.map(aid => ({
     coach_id: currentUser.id, athlete_id: aid,
     title, session_type: type, scheduled_date: date,
     description:    desc  || null,
-    distance_km:    dist  ? parseFloat(dist) : null,
+    distance_km:    dist  ? Math.round((parseFloat(dist) / (usesMiles ? KM_TO_MI : 1)) * 100) / 100 : null,
     duration_min:   dur   ? parseInt(dur)    : null,
     pace_target:    pace  || null,
     heart_rate_zone: hr   || null,
@@ -901,7 +1994,7 @@ async function handleCreateSession() {
   setLoading(btn, false, 'Create Session');
   if (error) { errEl.textContent = error.message; return; }
   closeModal('m-session');
-  toast(`${created.length} session${created.length > 1 ? 's' : ''} created ✓`, 'ok');
+  toast(`Ka-chow! ${created.length} session${created.length > 1 ? 's' : ''} created`, 'ok');
   if (created) created.forEach(s => notifyAthlete(s));
   await loadCoachSessions();
   renderApp();
@@ -964,10 +2057,29 @@ async function handleDuplicate() {
 // ══════════════════════════════════════════════════
 //  RACES — CREATE (coach)
 // ══════════════════════════════════════════════════
+function onRaceEventChange(prefix) {
+  const eventVal = el(`${prefix}-event`).value;
+  const found = STANDARD_EVENTS.find(e => e.label === eventVal);
+  const distInput = el(`${prefix}-dist`);
+  if (found) {
+    distInput.value = usesMiles ? displayDist(found.distance_km) : found.distance_km;
+    distInput.readOnly = true;
+    distInput.style.opacity = '.6';
+  } else {
+    distInput.value = '';
+    distInput.readOnly = false;
+    distInput.style.opacity = '1';
+  }
+}
+
 function openCreateRace() {
   el('race-err').textContent = '';
   ['race-name','race-dist','race-target','race-notes'].forEach(id => el(id).value = '');
   el('race-date').value = '';
+  el('race-dist-lbl').textContent = `Distance (${distUnit()})`;
+  el('race-event').innerHTML = eventSelectOptions();
+  el('race-dist').readOnly = false;
+  el('race-dist').style.opacity = '1';
   populateAthleteCheckboxes('race-ath-list', selectedAthId !== 'all' ? [selectedAthId] : []);
   openModal('m-race');
 }
@@ -983,23 +2095,70 @@ async function handleCreateRace() {
   if (!date)              { errEl.textContent = 'Please set a race date.'; return; }
 
   setLoading(btn, true);
+  const eventVal = val('race-event');
   const rows = athleteIds.map(aid => ({
     coach_id: currentUser.id, athlete_id: aid,
-    race_name: name, race_date: date,
-    distance_km: dist ? parseFloat(dist) : null,
+    race_name: name, race_date: date, event: eventVal || null,
+    distance_km: dist ? Math.round((parseFloat(dist) / (usesMiles ? KM_TO_MI : 1)) * 100) / 100 : null,
     target_time: target || null, notes: notes || null,
   }));
   const { error } = await sb.from('races').insert(rows);
   setLoading(btn, false, 'Add Race');
   if (error) { errEl.textContent = error.message; return; }
   closeModal('m-race');
-  toast('Race goal added ✓', 'ok');
+  toast('Race locked in! Ka-chow!', 'ok');
   await loadRaces();
   renderApp();
 }
 
 async function deleteRace(id) {
   if (!confirm('Remove this race goal?')) return;
+  await sb.from('races').delete().eq('id', id);
+  toast('Race removed');
+  await loadRaces();
+  renderApp();
+}
+
+// ══════════════════════════════════════════════════
+//  RACES — ATHLETE SELF-SERVICE
+// ══════════════════════════════════════════════════
+function openAthleteRace() {
+  el('ar-err').textContent = '';
+  ['ar-name','ar-dist','ar-target','ar-notes'].forEach(id => el(id).value = '');
+  el('ar-date').value = '';
+  el('ar-dist-lbl').textContent = `Distance (${distUnit()})`;
+  el('ar-event').innerHTML = eventSelectOptions();
+  el('ar-dist').readOnly = false;
+  el('ar-dist').style.opacity = '1';
+  openModal('m-athlete-race');
+}
+
+async function handleAthleteCreateRace() {
+  const name = val('ar-name'), date = val('ar-date'),
+        dist = val('ar-dist'), target = val('ar-target'), notes = val('ar-notes');
+  const errEl = el('ar-err'), btn = el('ar-btn');
+  errEl.textContent = '';
+  if (!name) { errEl.textContent = 'Race name is required.'; return; }
+  if (!date) { errEl.textContent = 'Please set a race date.'; return; }
+
+  setLoading(btn, true);
+  const eventVal = val('ar-event');
+  const { error } = await sb.from('races').insert({
+    coach_id: currentUser.id, athlete_id: currentUser.id,
+    race_name: name, race_date: date, event: eventVal || null,
+    distance_km: dist ? Math.round((parseFloat(dist) / (usesMiles ? KM_TO_MI : 1)) * 100) / 100 : null,
+    target_time: target || null, notes: notes || null,
+  });
+  setLoading(btn, false, 'Add Race');
+  if (error) { errEl.textContent = error.message; return; }
+  closeModal('m-athlete-race');
+  toast('Race locked in! Ka-chow!', 'ok');
+  await loadRaces();
+  renderApp();
+}
+
+async function deleteAthleteRace(id) {
+  if (!confirm('Remove this race?')) return;
   await sb.from('races').delete().eq('id', id);
   toast('Race removed');
   await loadRaces();
@@ -1030,8 +2189,25 @@ async function handleLogRaceResult() {
   setLoading(btn, false, 'Save Result');
   if (error) { errEl.textContent = error.message; return; }
   closeModal('m-race-result');
-  toast('Race result logged ✓', 'ok');
+  toast('Result logged! Checkered flag!', 'ok');
   await loadRaces();
+  await checkAndUpdatePB(raceId, time, status);
+  // Auto-post race completion
+  if (status === 'completed') {
+    const race = races.find(r => r.id === raceId);
+    if (race) {
+      const myGroupIds = groupMembers.filter(m => m.athlete_id === currentUser.id && !m.left_at).map(m => m.group_id);
+      const label = race.event || race.race_name;
+      const timeStr = time ? ` in ${time}` : '';
+      const postContent = `🏁 Finished ${label}${timeStr}!`;
+      if (myGroupIds.length) {
+        for (const gid of myGroupIds) await autoPost('auto_race', postContent, 'group', gid, { race_id: raceId, time });
+      } else {
+        await autoPost('auto_race', postContent, 'all', null, { race_id: raceId, time });
+      }
+    }
+  }
+  await loadFeed();
   renderApp();
 }
 
@@ -1041,12 +2217,13 @@ async function handleLogRaceResult() {
 function openLogSession(sessionId) {
   el('log-sid').value = sessionId;
   el('log-err').textContent = '';
+  el('log-dist-lbl').textContent = `Actual Distance (${distUnit()})`;
   closeModal('m-detail');
 
   // Pre-fill if editing an existing log
   const existing = logs[sessionId];
   if (existing) {
-    el('log-dist').value  = existing.actual_distance_km ?? '';
+    el('log-dist').value  = existing.actual_distance_km != null ? displayDist(existing.actual_distance_km) : '';
     el('log-dur').value   = existing.actual_duration_min ?? '';
     el('log-notes').value = existing.athlete_notes ?? '';
     setRating(existing.rating ?? 0);
@@ -1078,7 +2255,7 @@ async function handleLogSession() {
   const { error } = await sb.from('session_logs').upsert({
     session_id:          sessionId,
     athlete_id:          currentUser.id,
-    actual_distance_km:  dist  ? parseFloat(dist) : null,
+    actual_distance_km:  dist  ? Math.round((parseFloat(dist) / (usesMiles ? KM_TO_MI : 1)) * 100) / 100 : null,
     actual_duration_min: dur   ? parseInt(dur)    : null,
     rating:              currentRating > 0 ? currentRating : null,
     athlete_notes:       notes || null,
@@ -1087,12 +2264,28 @@ async function handleLogSession() {
   setLoading(btn, false, 'Save Log');
   if (error) { errEl.textContent = error.message; return; }
   closeModal('m-log');
-  toast('Session logged ✓', 'ok');
+  toast('Lap logged! Keep rolling!', 'ok');
+  // Auto-post if athlete rated the session 4 or 5 stars
+  if (currentProfile.role === 'athlete' && currentRating >= 4) {
+    const sess = sessions.find(s => s.id === sessionId);
+    if (sess) {
+      const stars = '★'.repeat(currentRating);
+      const distPart = dist ? ` · ${dist}${distUnit()}` : '';
+      const postContent = `✅ ${sess.title}${distPart} — ${stars}`;
+      const myGroupIds = groupMembers.filter(m => m.athlete_id === currentUser.id && !m.left_at).map(m => m.group_id);
+      if (myGroupIds.length) {
+        for (const gid of myGroupIds) await autoPost('auto_session', postContent, 'group', gid, { session_id: sessionId, rating: currentRating });
+      } else {
+        await autoPost('auto_session', postContent, 'all', null, { session_id: sessionId, rating: currentRating });
+      }
+    }
+  }
   if (currentProfile.role === 'coach') {
     await loadCoachSessions();
   } else {
     await loadAthleteSessions();
   }
+  await loadFeed();
   renderApp();
 }
 
@@ -1126,7 +2319,12 @@ function getMonday(d) {
   return date;
 }
 function addDays(d, n) { const r = new Date(d); r.setDate(r.getDate() + n); return r; }
-function dateStr(d)    { return d.toISOString().split('T')[0]; }
+function dateStr(d) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
 function todayStr()    { return dateStr(new Date()); }
 
 function weekLabel() {
@@ -1238,14 +2436,14 @@ function initials(name) {
 }
 function starsHtml(r) {
   return Array.from({length:5}, (_,i) =>
-    `<span style="color:${i < r ? '#FBBF24' : 'var(--border)'}">★</span>`).join('');
+    `<span style="color:${i < r ? '#FFD700' : 'var(--border)'}">★</span>`).join('');
 }
 function statsRowHtml(s) {
   if (!s.distance_km && !s.duration_min && !s.pace_target && !s.heart_rate_zone) return '';
   return `<div class="stats-row">
-    ${s.distance_km    ? `<div class="stat"><div class="stat-val">${s.distance_km}km</div><div class="stat-lbl">Distance</div></div>` : ''}
+    ${s.distance_km    ? `<div class="stat"><div class="stat-val">${displayDist(s.distance_km)}${distUnit()}</div><div class="stat-lbl">Distance</div></div>` : ''}
     ${s.duration_min   ? `<div class="stat"><div class="stat-val">${s.duration_min}min</div><div class="stat-lbl">Duration</div></div>` : ''}
-    ${s.pace_target    ? `<div class="stat"><div class="stat-val">${s.pace_target}</div><div class="stat-lbl">Pace /km</div></div>` : ''}
+    ${s.pace_target    ? `<div class="stat"><div class="stat-val">${s.pace_target}</div><div class="stat-lbl">Pace /${distUnit()}</div></div>` : ''}
     ${s.heart_rate_zone ? `<div class="stat"><div class="stat-val" style="font-size:13px">${s.heart_rate_zone}</div><div class="stat-lbl">HR / RPE</div></div>` : ''}
   </div>`;
 }
@@ -1254,7 +2452,7 @@ function logPanelHtml(log) {
   return `<div class="log-panel">
     <div class="log-panel-hdr">✓ Session Logged</div>
     <div class="log-stats">
-      ${log.actual_distance_km  ? `<div class="stat"><div class="log-stat-val">${log.actual_distance_km}km</div><div class="stat-lbl">Actual Dist</div></div>` : ''}
+      ${log.actual_distance_km  ? `<div class="stat"><div class="log-stat-val">${displayDist(log.actual_distance_km)}${distUnit()}</div><div class="stat-lbl">Actual Dist</div></div>` : ''}
       ${log.actual_duration_min ? `<div class="stat"><div class="log-stat-val">${log.actual_duration_min}min</div><div class="stat-lbl">Actual Time</div></div>` : ''}
       ${log.rating ? `<div class="stat"><div class="log-stat-val" style="display:flex;gap:1px">${starsHtml(log.rating)}</div><div class="stat-lbl">Rating</div></div>` : ''}
     </div>
@@ -1270,6 +2468,7 @@ function raceCardHtml(r, { isCoach = false, showAthlete = false } = {}) {
   const isPast = days < 0;
   const isDone = r.status !== 'upcoming';
   const athlete = showAthlete ? athletes.find(a => a.id === r.athlete_id) : null;
+  const isSelfAdded = r.coach_id === r.athlete_id;
   let countdownText;
   if (isDone) {
     const labels = { completed: '✓ COMPLETED', dns: 'DNS', dnf: 'DNF' };
@@ -1280,18 +2479,55 @@ function raceCardHtml(r, { isCoach = false, showAthlete = false } = {}) {
   else if (days <= 56) countdownText = `${Math.ceil(days/7)} WEEKS`;
   else countdownText = `${days} DAYS`;
 
+  const sourceBadge = isSelfAdded
+    ? `<span style="font-size:10px;font-family:var(--mono);color:var(--gold);background:var(--gold-dim);padding:2px 8px;border-radius:10px;font-weight:700">MY RACE</span>`
+    : `<span style="font-size:10px;font-family:var(--mono);color:var(--accent);background:var(--accent-dim);padding:2px 8px;border-radius:10px;font-weight:700">COACH</span>`;
+
   return `<div class="race-card ${isDone ? 'race-completed' : ''} ${isPast && !isDone ? 'race-past' : ''}">
-    ${athlete ? `<div class="athlete-tag" style="margin-bottom:8px"><div class="avatar av-sm">${initials(athlete.full_name)}</div><div class="athlete-tag-name">${athlete.full_name}</div></div>` : ''}
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      ${athlete ? `<div class="athlete-tag" style="margin:0"><div class="avatar av-sm">${initials(athlete.full_name)}</div><div class="athlete-tag-name">${athlete.full_name}</div></div>` : '<div></div>'}
+      ${sourceBadge}
+    </div>
     <div class="race-countdown ${days <= 14 && !isDone ? 'race-soon' : ''}" style="color:${isDone ? 'var(--success)' : ''}">${countdownText}</div>
     <div class="race-name">${r.race_name}</div>
-    <div class="race-meta">${fmtDate(r.race_date)}${r.distance_km ? ` · ${r.distance_km}km` : ''}</div>
+    <div class="race-meta">${fmtDate(r.race_date)}${r.distance_km ? ` · ${displayDist(r.distance_km)}${distUnit()}` : ''}</div>
     ${r.target_time ? `<div class="race-target"><div class="race-target-lbl">Target</div><div class="race-target-val">${r.target_time}</div></div>` : ''}
     ${r.actual_time ? `<div class="race-target" style="border-left:2px solid var(--success)"><div class="race-target-lbl" style="color:var(--success)">Result</div><div class="race-target-val">${r.actual_time}</div></div>` : ''}
     ${r.notes ? `<div style="margin-top:8px;font-size:12px;color:var(--text-muted)">${r.notes}</div>` : ''}
     <div class="card-actions" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border)">
       ${isCoach ? `<button class="btn btn-danger btn-xs" onclick="deleteRace('${r.id}')">Remove</button>` : ''}
+      ${!isCoach && isSelfAdded ? `<button class="btn btn-danger btn-xs" onclick="deleteAthleteRace('${r.id}')">Remove</button>` : ''}
       ${!isCoach && !isDone ? `<button class="btn btn-primary btn-sm" onclick="openRaceResult('${r.id}')">Log Result</button>` : ''}
       ${!isCoach && isDone ? `<button class="btn btn-ghost btn-sm" onclick="openRaceResult('${r.id}')">Edit Result</button>` : ''}
+    </div>
+  </div>`;
+}
+
+function unavailSectionHtml(isCoach) {
+  const today = todayStr();
+  const upcoming = unavailability.filter(u => u.end_date >= today);
+  if (!upcoming.length) return '';
+  return `<div style="margin-bottom:16px">
+    <div class="section-heading" style="margin-bottom:8px">UNAVAILABLE PERIODS <span style="font-family:var(--mono);font-size:12px;color:var(--text-dim);font-weight:400;letter-spacing:0">${upcoming.length} upcoming</span></div>
+    <div style="display:flex;flex-direction:column;gap:6px">
+      ${upcoming.map(u => {
+        const isSingle = u.start_date === u.end_date;
+        const ath = isCoach ? athletes.find(a => a.id === u.athlete_id) : null;
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:rgba(239,68,68,0.06);border:1px solid rgba(239,68,68,0.2);border-radius:var(--r);gap:12px">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0">
+            <span style="font-size:16px;flex-shrink:0">⊘</span>
+            <div>
+              ${ath ? `<div style="font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px">${ath.full_name}</div>` : ''}
+              <div style="font-size:13px;font-weight:600;font-family:var(--mono);color:var(--danger)">${isSingle ? u.start_date : `${u.start_date} → ${u.end_date}`}</div>
+              ${u.reason ? `<div style="font-size:11px;color:var(--text-dim);margin-top:2px">${u.reason}</div>` : ''}
+            </div>
+          </div>
+          ${!isCoach ? `<div style="display:flex;gap:4px;flex-shrink:0">
+            <button class="btn btn-ghost btn-xs" onclick="openEditUnavailability('${u.id}')">Edit</button>
+            <button class="btn btn-ghost btn-xs" onclick="duplicateUnavailability('${u.id}')">Dup</button>
+          </div>` : ''}
+        </div>`;
+      }).join('')}
     </div>
   </div>`;
 }
@@ -1301,7 +2537,7 @@ function raceSectionHtml(opts) {
   const completedRaces = races.filter(r => r.status !== 'upcoming');
   if (!races.length) return '';
   return `<div class="races-section">
-    <div class="section-heading">RACE GOALS</div>
+    <div class="section-heading">RACE GOALS <span style="font-family:var(--mono);font-size:12px;color:var(--text-dim);font-weight:400;letter-spacing:0">${upcomingRaces.length} upcoming</span></div>
     <div class="races-grid">
       ${upcomingRaces.map(r => raceCardHtml(r, opts)).join('')}
       ${completedRaces.map(r => raceCardHtml(r, opts)).join('')}
@@ -1339,7 +2575,7 @@ function getWeeklyData() {
   return sorted.map(([week, data]) => ({
     week,
     label: new Date(week + 'T00:00:00').toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }),
-    km: Math.round(data.km * 10) / 10,
+    km: Math.round(data.km * 10) / 10, // always stored in km, converted at display
     sessions: data.sessions,
     avgRating: data.ratingCount ? Math.round(data.totalRating / data.ratingCount * 10) / 10 : null,
     avgPace: data.minPerKm.length ? data.minPerKm.reduce((a,b) => a+b, 0) / data.minPerKm.length : null,
@@ -1352,7 +2588,7 @@ function renderProgressCharts(containerId) {
   if (!container) return;
 
   if (data.length < 2) {
-    container.innerHTML = `<div class="chart-empty">Log more sessions to see your progress charts. You need at least 2 weeks of data.</div>`;
+    container.innerHTML = `<div class="chart-empty">Need more laps to show your stats. Log at least 2 weeks of sessions to see the telemetry.</div>`;
     return;
   }
 
@@ -1379,13 +2615,13 @@ function renderProgressCharts(containerId) {
     data: {
       labels: last12.map(d => d.label),
       datasets: [{
-        data: last12.map(d => d.km),
-        backgroundColor: 'rgba(249,115,22,0.7)',
-        borderColor: '#F97316',
+        data: last12.map(d => displayDist(d.km)),
+        backgroundColor: 'rgba(220,38,38,0.7)',
+        borderColor: '#DC2626',
         borderWidth: 1, borderRadius: 4,
       }]
     },
-    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, beginAtZero: true, title: { display: true, text: 'km', color: '#4B5563' } } } }
+    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, beginAtZero: true, title: { display: true, text: distUnit(), color: '#4B5563' } } } }
   });
 
   // Effort line chart
@@ -1396,8 +2632,8 @@ function renderProgressCharts(containerId) {
       labels: effortData.map(d => d.label),
       datasets: [{
         data: effortData.map(d => d.avgRating),
-        borderColor: '#FBBF24', backgroundColor: 'rgba(251,191,36,0.1)',
-        fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#FBBF24',
+        borderColor: '#FFD700', backgroundColor: 'rgba(255,215,0,0.1)',
+        fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#FFD700',
       }]
     },
     options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, min: 1, max: 5, title: { display: true, text: '/ 5', color: '#4B5563' } } } }
@@ -1415,7 +2651,7 @@ function renderProgressCharts(containerId) {
         fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#10B981',
       }]
     },
-    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, reverse: true, title: { display: true, text: 'min/km', color: '#4B5563' } } } }
+    options: { ...chartOpts, scales: { ...chartOpts.scales, y: { ...chartOpts.scales.y, reverse: true, title: { display: true, text: paceUnit(), color: '#4B5563' } } } }
   });
 }
 
@@ -1425,6 +2661,7 @@ function renderProgressCharts(containerId) {
 function listCard(s, { showAthlete = false, isCoach = false } = {}) {
   const log = logs[s.id], completed = !!log, today = isToday(s.scheduled_date);
   const athlete = showAthlete ? athletes.find(a => a.id === s.athlete_id) : null;
+  const isExtra = s.is_extra === true;
   return `<div class="session-card ${completed ? 'done' : ''} ${today ? 'is-today' : ''}">
     ${athlete ? `<div class="athlete-tag">
       <div class="avatar av-sm">${initials(athlete.full_name)}</div>
@@ -1434,6 +2671,7 @@ function listCard(s, { showAthlete = false, isCoach = false } = {}) {
     <div class="session-top">
       <span class="session-date">${fmtDate(s.scheduled_date)}</span>
       ${badge(s.session_type)}
+      ${isExtra ? '<span class="badge-extra">EXTRA</span>' : ''}
       ${!showAthlete && completed ? '<span class="done-badge">✓ DONE</span>' : ''}
     </div>
     <div class="session-title">${s.title}</div>
@@ -1457,12 +2695,14 @@ function listCard(s, { showAthlete = false, isCoach = false } = {}) {
 function weekCard(s, showAthlete = false) {
   const log = logs[s.id];
   const athlete = showAthlete ? athletes.find(a => a.id === s.athlete_id) : null;
+  const isExtra = s.is_extra === true;
   const statParts = [
-    s.distance_km ? `${s.distance_km}km` : '',
+    s.distance_km ? `${displayDist(s.distance_km)}${distUnit()}` : '',
     s.duration_min ? `${s.duration_min}min` : '',
   ].filter(Boolean).join(' · ');
-  return `<div class="week-card ${log ? 'wc-done' : ''}" onclick="openDetail('${s.id}')">
+  return `<div class="week-card ${log ? 'wc-done' : ''} ${isExtra ? 'wc-extra' : ''}" onclick="openDetail('${s.id}')">
     ${badge(s.session_type)}
+    ${isExtra ? '<span class="badge badge-extra" style="margin-left:auto">EXTRA</span>' : ''}
     <div class="week-card-title">${s.title}</div>
     ${athlete ? `<div class="week-card-ath">${athlete.full_name}</div>` : ''}
     ${statParts ? `<div class="week-card-stats">${statParts}</div>` : ''}
@@ -1479,11 +2719,19 @@ function renderWeekGrid(sessionSubset, showAthlete = false) {
     const dayNum = day.getDate();
     const isT = day.getTime() === todayD.getTime();
     const daySessions = sessionSubset.filter(s => s.scheduled_date === ds);
+
+    // Check for unavailability on this day
+    const dayUnavail = unavailability.filter(u => u.start_date <= ds && u.end_date >= ds);
+    const unavailBanner = dayUnavail.length > 0
+      ? `<div class="unavail-banner">${dayUnavail[0].reason || 'Unavailable'}</div>`
+      : '';
+
     return `<div class="week-col">
       <div class="week-col-hdr ${isT ? 'is-today' : ''}">
         <div class="week-day-name">${dayLabel}</div>
         <div class="week-day-num">${dayNum}</div>
       </div>
+      ${unavailBanner}
       ${daySessions.map(s => weekCard(s, showAthlete)).join('') || ''}
     </div>`;
   }).join('');
@@ -1500,52 +2748,377 @@ function weekNavHtml() {
 }
 
 // ══════════════════════════════════════════════════
+//  RECORDS VIEW
+// ══════════════════════════════════════════════════
+function renderRecordsView(isCoach) {
+  if (isCoach) {
+    if (selectedAthId === 'all') {
+      // Group PBs by athlete
+      if (!athletes.length) return `<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-title">NO ATHLETES YET</div><div class="empty-sub">Add athletes to see their records.</div></div>`;
+      const athleteBlocks = athletes.map(a => {
+        const athPBs = personalBests.filter(p => p.athlete_id === a.id);
+        if (!athPBs.length) return `
+          <div class="records-athlete-group">
+            <div class="records-athlete-hdr">
+              <div class="avatar av-sm">${initials(a.full_name)}</div>
+              <div style="font-size:13px;font-weight:600">${a.full_name}</div>
+            </div>
+            <div style="font-size:12px;color:var(--text-dim);padding:8px 0">No records logged yet.</div>
+          </div>`;
+        return `
+          <div class="records-athlete-group">
+            <div class="records-athlete-hdr">
+              <div class="avatar av-sm">${initials(a.full_name)}</div>
+              <div style="font-size:13px;font-weight:600">${a.full_name}</div>
+            </div>
+            ${pbTableHtml(athPBs, false)}
+          </div>`;
+      }).join('');
+      return `<div class="section-heading">ATHLETE RECORDS</div>${athleteBlocks}`;
+    } else {
+      const athPBs = personalBests.filter(p => p.athlete_id === selectedAthId);
+      const ath = athletes.find(a => a.id === selectedAthId);
+      if (!athPBs.length) return `<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-title">NO RECORDS YET</div><div class="empty-sub">${ath?.full_name || 'This athlete'} hasn't logged any PBs yet.</div></div>`;
+      return `<div class="section-heading">RECORDS — ${(ath?.full_name || '').toUpperCase()}</div>${pbTableHtml(athPBs, false)}`;
+    }
+  } else {
+    // Athlete view: show both PBs and unavailability
+    const unavailHtml = unavailability.length > 0
+      ? `<div class="records-wrap" style="margin-bottom:16px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--text-dim)">UNAVAILABLE PERIODS</div>
+            <button class="btn btn-ghost btn-xs" onclick="openAddUnavailability()" style="border-color:var(--danger);color:var(--danger)">+ Add</button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${unavailability.map(u => `
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:8px;background:var(--surface2);border-radius:6px;border:1px solid rgba(239,68,68,.2)">
+                <div>
+                  <div style="font-size:12px;font-weight:600">${u.start_date}${u.end_date !== u.start_date ? ` → ${u.end_date}` : ''}</div>
+                  ${u.reason ? `<div style="font-size:11px;color:var(--text-dim);margin-top:2px">${u.reason}</div>` : ''}
+                </div>
+                <div style="display:flex;gap:4px">
+                  <button class="btn btn-ghost btn-xs" onclick="openEditUnavailability('${u.id}')">Edit</button>
+                  <button class="btn btn-ghost btn-xs" onclick="duplicateUnavailability('${u.id}')">Dup</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        </div>`
+      : `<div class="records-wrap" style="margin-bottom:16px;padding:12px;text-align:center">
+          <div style="font-size:12px;color:var(--text-dim);margin-bottom:8px">No unavailability periods scheduled.</div>
+          <button class="btn btn-ghost btn-sm" onclick="openAddUnavailability()" style="border-color:var(--danger);color:var(--danger)">+ Mark Unavailable</button>
+        </div>`;
+
+    return `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+        <div class="section-heading" style="margin:0">MY RECORDS</div>
+        <button class="btn btn-ghost btn-sm" onclick="openAddPB()" style="border-color:var(--gold);color:var(--gold)">+ Add PB</button>
+      </div>
+      ${!personalBests.length
+        ? `<div class="empty-state"><div class="empty-icon">🏆</div><div class="empty-title">NO RECORDS YET</div><div class="empty-sub">Add your PBs manually or log a race result with a standard event to auto-record.</div></div>`
+        : pbTableHtml(personalBests, true)}
+      ${unavailHtml}
+    `;
+  }
+}
+
+// ══════════════════════════════════════════════════
+//  FEED VIEW
+// ══════════════════════════════════════════════════
+const FEED_EMOJIS = ['🏎️','⚡','🔥','🏆'];
+
+const POST_TYPE_META = {
+  announcement:    { label: 'Announcement', colour: 'var(--accent)',   bg: 'var(--accent-dim)' },
+  message:         { label: 'Message',       colour: 'var(--purple)',   bg: 'var(--purple-dim)' },
+  auto_pb:         { label: '🏆 New PB',     colour: 'var(--gold)',     bg: 'var(--gold-dim)' },
+  auto_sb:         { label: '⚡ Season Best', colour: 'var(--gold)',     bg: 'var(--gold-dim)' },
+  auto_session:    { label: '✅ Session',     colour: 'var(--success)',  bg: 'var(--success-dim)' },
+  auto_race:       { label: '🏁 Race Result', colour: 'var(--accent)',   bg: 'var(--accent-dim)' },
+  auto_left:       { label: 'Left Group',    colour: 'var(--text-dim)', bg: 'var(--surface2)' },
+};
+
+function fmtTimeAgo(iso) {
+  const diff = (Date.now() - new Date(iso)) / 1000;
+  if (diff < 60)    return 'just now';
+  if (diff < 3600)  return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  const d = new Date(iso);
+  return d.toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+}
+
+function feedPostHtml(post, isCoach) {
+  const meta = POST_TYPE_META[post.post_type] || { label: post.post_type, colour: 'var(--text-dim)', bg: 'var(--surface2)' };
+  const author = athletes.find(a => a.id === post.author_id) ||
+                 (post.author_id === currentUser.id ? currentProfile : null);
+  const authorName = author?.full_name || post.metadata?.author_name || 'Unknown';
+  const rxns = feedReactions[post.id] || [];
+
+  // Group reaction emojis
+  const rxnCounts = {};
+  FEED_EMOJIS.forEach(e => { rxnCounts[e] = rxns.filter(r => r.emoji === e).length; });
+  const myRxns = new Set(rxns.filter(r => r.user_id === currentUser.id).map(r => r.emoji));
+
+  const rxnHtml = FEED_EMOJIS.map(e => rxnCounts[e] > 0 ? `
+    <button class="reaction-btn ${myRxns.has(e) ? 'mine' : ''}" onclick="toggleReaction('${post.id}','${e}')">
+      ${e} <span class="reaction-count">${rxnCounts[e]}</span>
+    </button>` : `
+    <button class="reaction-btn" onclick="toggleReaction('${post.id}','${e}')" style="opacity:.4">
+      ${e}
+    </button>`
+  ).join('');
+
+  // Target label
+  let targetLabel = '';
+  if (post.target_type === 'group') {
+    const g = groups.find(x => x.id === post.target_id);
+    if (g) targetLabel = `<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono)">→ ${g.emoji} ${g.name}</span>`;
+  } else if (post.target_type === 'athlete') {
+    const a = athletes.find(x => x.id === post.target_id);
+    if (a) targetLabel = `<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono)">→ ${a.full_name}</span>`;
+  }
+
+  const canDelete = isCoach || post.author_id === currentUser.id;
+
+  return `<div class="feed-post">
+    <div class="feed-post-header">
+      <div class="avatar av-sm">${initials(authorName)}</div>
+      <div class="feed-post-meta">
+        <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+          <span class="feed-post-author">${authorName}</span>
+          <span class="feed-post-badge" style="background:${meta.bg};color:${meta.colour}">${meta.label}</span>
+          ${targetLabel}
+        </div>
+        <div class="feed-post-time">${fmtTimeAgo(post.created_at)}</div>
+      </div>
+      ${canDelete ? `<button onclick="deleteFeedPost('${post.id}')" style="background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:14px;padding:4px;line-height:1;border-radius:4px" title="Delete">✕</button>` : ''}
+    </div>
+    <div class="feed-post-content">${post.content}</div>
+    <div class="feed-reactions">${rxnHtml}</div>
+  </div>`;
+}
+
+function renderFeedView(isCoach) {
+  // Filter posts for the current feedTab
+  let visiblePosts = feedPosts;
+  if (feedTab !== 'all') {
+    visiblePosts = feedPosts.filter(p =>
+      (p.target_type === 'group' && p.target_id === feedTab) ||
+      // own posts in this group
+      (p.author_id === currentUser.id && p.target_id === feedTab)
+    );
+  }
+
+  // Feed tab strip (athlete: All + each group; coach: All + each group)
+  const myGroups = isCoach ? groups : groups.filter(g =>
+    groupMembers.some(m => m.group_id === g.id && m.athlete_id === currentUser.id && !m.left_at)
+  );
+  const tabStrip = `<div class="feed-tab-strip">
+    <button class="feed-tab ${feedTab === 'all' ? 'active' : ''}" onclick="setFeedTab('all')">All</button>
+    ${myGroups.map(g => `<button class="feed-tab ${feedTab === g.id ? 'active' : ''}" onclick="setFeedTab('${g.id}')">${g.emoji} ${g.name}</button>`).join('')}
+  </div>`;
+
+  // Compose box (coach only, or athlete manual posts)
+  const composeHtml = `<div class="feed-compose">
+    <textarea id="feed-compose-text" placeholder="${isCoach ? 'Post an announcement or message to your athletes...' : 'Share something with your group...'}" rows="3"></textarea>
+    <div class="feed-compose-actions">
+      <select id="feed-compose-target" class="feed-target-select">
+        ${isCoach ? `
+          <option value="all">→ All Athletes</option>
+          ${groups.map(g => `<option value="group:${g.id}">${g.emoji} ${g.name}</option>`).join('')}
+          ${athletes.map(a => `<option value="athlete:${a.id}">✉ ${a.full_name} (private)</option>`).join('')}
+        ` : myGroups.map(g => `<option value="group:${g.id}">${g.emoji} ${g.name}</option>`).join('')}
+      </select>
+      <button class="btn btn-primary btn-sm" onclick="handlePostFeed()">Post</button>
+    </div>
+  </div>`;
+
+  // Group settings for athlete (mute/leave per group)
+  const athleteGroupControls = !isCoach && myGroups.length > 0 ? `
+    <div style="margin-bottom:20px">
+      ${myGroups.map(g => {
+        const mem = groupMembers.find(m => m.group_id === g.id && m.athlete_id === currentUser.id);
+        const isMuted = !!mem?.muted_at;
+        return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;padding:8px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r)">
+          <span class="group-dot" style="background:${g.colour}"></span>
+          <span style="flex:1;font-size:13px;font-weight:600">${g.emoji} ${g.name}</span>
+          <button class="btn btn-ghost btn-xs" onclick="${isMuted ? `unmuteGroup('${g.id}')` : `muteGroup('${g.id}')`}">${isMuted ? '🔔 Unmute' : '🔕 Mute'}</button>
+          <button class="btn btn-danger btn-xs" onclick="leaveGroup('${g.id}')">Leave</button>
+        </div>`;
+      }).join('')}
+    </div>` : '';
+
+  const postsHtml = visiblePosts.length > 0
+    ? visiblePosts.map(p => feedPostHtml(p, isCoach)).join('')
+    : `<div class="feed-empty"><div class="feed-auto-icon">📭</div>Nothing here yet. ${isCoach ? 'Post an announcement above.' : 'Your coach will post here soon.'}</div>`;
+
+  return `<div class="feed-wrap">
+    ${composeHtml}
+    ${tabStrip}
+    ${!isCoach ? athleteGroupControls : ''}
+    ${postsHtml}
+  </div>`;
+}
+
+function setFeedTab(tab) {
+  feedTab = tab;
+  renderApp();
+}
+
+async function handlePostFeed() {
+  const text = el('feed-compose-text')?.value?.trim();
+  if (!text) { toast('Write something first', 'err'); return; }
+  const targetVal = el('feed-compose-target')?.value || 'all';
+  let targetType = 'all', targetId = null;
+  if (targetVal.startsWith('group:'))   { targetType = 'group';   targetId = targetVal.replace('group:',''); }
+  if (targetVal.startsWith('athlete:')) { targetType = 'athlete'; targetId = targetVal.replace('athlete:',''); }
+  const postType = targetType === 'athlete' ? 'message' : 'announcement';
+  const { error } = await sb.from('feed_posts').insert({
+    author_id: currentUser.id, post_type: postType,
+    content: text, target_type: targetType, target_id: targetId || null,
+    metadata: { author_name: currentProfile.full_name },
+  });
+  if (error) { toast(error.message, 'err'); return; }
+  el('feed-compose-text').value = '';
+  toast('✓ Posted');
+  await loadFeed();
+  renderApp();
+}
+
+async function toggleReaction(postId, emoji) {
+  const rxns = feedReactions[postId] || [];
+  const mine = rxns.find(r => r.user_id === currentUser.id && r.emoji === emoji);
+  if (mine) {
+    await sb.from('feed_reactions').delete().eq('id', mine.id);
+  } else {
+    await sb.from('feed_reactions').insert({ post_id: postId, user_id: currentUser.id, emoji });
+  }
+  await loadFeed();
+  renderApp();
+}
+
+async function deleteFeedPost(postId) {
+  if (!confirm('Delete this post?')) return;
+  await sb.from('feed_posts').delete().eq('id', postId);
+  await loadFeed();
+  renderApp();
+}
+
+function pbTableHtml(pbs, editable) {
+  const allEvents = STANDARD_EVENTS.map(e => e.label);
+  // Show all standard events; only render rows that have data OR if athlete (show all as editable)
+  const rows = editable
+    ? allEvents.map(ev => ({ ev, pb: pbs.find(p => p.event === ev) }))
+    : pbs.sort((a,b) => (a.distance_m||0) - (b.distance_m||0)).map(p => ({ ev: p.event, pb: p }));
+
+  return `
+    <div class="records-wrap">
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>PB</th>
+            <th>Date</th>
+            <th>Season Best</th>
+            <th>Date</th>
+            ${editable ? '<th></th>' : ''}
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(({ ev, pb }) => `
+            <tr>
+              <td class="pb-event">${ev}</td>
+              <td class="${pb?.pb_time ? 'pb-time-cell' : 'pb-time-cell empty'}">${pb?.pb_time || '—'}</td>
+              <td class="pb-date-cell">${pb?.pb_date ? new Date(pb.pb_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'}</td>
+              <td class="${pb?.sb_time ? 'pb-time-cell' : 'pb-time-cell empty'}" style="color:${pb?.sb_time ? 'var(--accent)' : ''}">${pb?.sb_time || '—'}</td>
+              <td class="pb-date-cell">${pb?.sb_date ? new Date(pb.sb_date+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'}</td>
+              ${editable ? `<td><button class="btn btn-ghost btn-xs" onclick="openEditPB('${ev}')">Edit</button></td>` : ''}
+            </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+}
+
+// ══════════════════════════════════════════════════
 //  RENDER — COACH VIEW
 // ══════════════════════════════════════════════════
 function renderCoachView() {
   const loggedCount = Object.keys(logs).length;
-  const selName = selectedAthId === 'all'
-    ? 'All Athletes'
+  const selGroup = selectedGroupId ? groups.find(g => g.id === selectedGroupId) : null;
+  const selName = selGroup
+    ? `${selGroup.emoji} ${selGroup.name}`
+    : selectedAthId === 'all' ? 'All Athletes'
     : athletes.find(a => a.id === selectedAthId)?.full_name || 'Sessions';
 
-  const rosterItems = athletes.map(a => `
-    <div class="roster-item ${selectedAthId === a.id ? 'active' : ''}"
+  // Build sidebar: ungrouped athletes + group sections
+  const activeMembers = groupMembers.filter(m => !m.left_at);
+  const groupedAthIds = new Set(activeMembers.map(m => m.athlete_id));
+  const ungrouped = athletes.filter(a => !groupedAthIds.has(a.id));
+
+  const groupSections = groups.map(g => {
+    const mems = activeMembers.filter(m => m.group_id === g.id);
+    const memAthletes = athletes.filter(a => mems.some(m => m.athlete_id === a.id));
+    const isSelGroup = selectedGroupId === g.id;
+    return `<div class="group-section">
+      <div class="group-heading ${isSelGroup ? 'active' : ''}" onclick="selectGroup('${g.id}')">
+        <span class="group-dot" style="background:${g.colour}"></span>
+        <span>${g.emoji} ${g.name}</span>
+        <span class="group-count">${memAthletes.length}</span>
+        <button class="group-manage-btn" onclick="event.stopPropagation();openGroupMembers('${g.id}')" title="Manage members">⚙</button>
+        <button class="group-manage-btn" onclick="event.stopPropagation();openEditGroup('${g.id}')" title="Edit group">✎</button>
+      </div>
+      ${memAthletes.map(a => `
+        <div class="roster-item ${selectedAthId === a.id && !selectedGroupId ? 'active' : ''} group-members-list"
+             onclick="selectAthlete('${a.id}')">
+          <span class="group-dot" style="background:${g.colour};margin-left:4px"></span>
+          <div class="avatar av-sm">${initials(a.full_name)}</div>
+          <div class="roster-name">${a.full_name}</div>
+        </div>`).join('')}
+    </div>`;
+  }).join('');
+
+  const ungroupedItems = ungrouped.map(a => `
+    <div class="roster-item ${selectedAthId === a.id && !selectedGroupId ? 'active' : ''}"
          onclick="selectAthlete('${a.id}')">
       <div class="avatar">${initials(a.full_name)}</div>
       <div class="roster-name">${a.full_name}</div>
     </div>`).join('');
 
   let content;
-  if (currentView === 'progress') {
+  if (currentView === 'feed') {
+    content = renderFeedView(true);
+  } else if (currentView === 'progress') {
     content = `<div id="coach-charts" class="charts-grid"></div>`;
   } else if (currentView === 'week') {
     const ws = getWeekSessions();
-    content = weekNavHtml()
-      + (ws.length === 0
-        ? `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">NOTHING THIS WEEK</div><div class="empty-sub">No sessions scheduled for this week.</div></div>`
-        : renderWeekGrid(ws, selectedAthId === 'all'));
+    content = weekNavHtml() + renderWeekGrid(ws, selectedAthId === 'all');
+  } else if (currentView === 'records') {
+    content = renderRecordsView(true);
   } else {
-    content = raceSectionHtml({ isCoach: true, showAthlete: selectedAthId === 'all' });
+    content = unavailSectionHtml(true);
+    content += raceSectionHtml({ isCoach: true, showAthlete: selectedAthId === 'all' });
     content += sessions.length === 0
-      ? `<div class="empty-state"><div class="empty-icon">🏃</div><div class="empty-title">NO SESSIONS</div><div class="empty-sub">${athletes.length === 0 ? 'Add an athlete first, then create sessions.' : 'Hit "+ New Session" to get started.'}</div></div>`
+      ? `<div class="empty-state"><div class="empty-icon">🏎️</div><div class="empty-title">NO SESSIONS YET</div><div class="empty-sub">${athletes.length === 0 ? 'Add a driver to your pit crew first.' : 'Ka-chow! Hit "+ New Session" to get rolling.'}</div></div>`
       : `<div class="sessions-grid">${sessions.map(s => listCard(s, { showAthlete: selectedAthId === 'all', isCoach: true })).join('')}</div>`;
   }
 
   el('app').innerHTML = `
     <div class="coach-layout">
       <div class="sidebar ${sidebarOpen ? 'open' : ''}">
-        <div class="sidebar-logo">PACECOACH</div>
+        <div class="sidebar-logo">PACECOACH <span class="badge-95 badge-95-sm"><svg width="6" height="10" viewBox="0 0 9 14" fill="none" style="flex-shrink:0"><polygon points="6,0 2,6 5,6 3,14 9,5 5.5,5" fill="rgba(255,255,255,0.9)"/></svg>95</span></div>
         <div class="sidebar-inner">
           <div class="sidebar-heading">Roster</div>
-          <div class="roster-item ${selectedAthId === 'all' ? 'active' : ''}" onclick="selectAthlete('all')">
+          <div class="roster-item ${!selectedGroupId && selectedAthId === 'all' ? 'active' : ''}" onclick="selectAthlete('all')">
             <div class="avatar" style="background:var(--accent-dim)">ALL</div>
             <div class="roster-name">All Athletes</div>
           </div>
           <div class="divider"></div>
-          ${rosterItems}
+          ${groupSections}
+          ${ungrouped.length > 0 && groups.length > 0 ? `<div class="sidebar-heading" style="margin-top:6px">UNGROUPED</div>` : ''}
+          ${ungroupedItems}
           ${athletes.length === 0 ? `<div style="padding:8px;font-size:12px;color:var(--text-dim)">No athletes yet</div>` : ''}
         </div>
         <div class="sidebar-footer">
+          <button class="btn btn-ghost btn-xs btn-full" onclick="openCreateGroup()" style="color:var(--text-dim)">+ New Group</button>
           <button class="btn btn-ghost btn-sm btn-full" onclick="openAddAthlete()">+ Add Athlete</button>
           <button class="btn btn-ghost btn-sm btn-full" style="color:var(--text-muted)" onclick="handleLogout()">Sign Out</button>
         </div>
@@ -1553,7 +3126,7 @@ function renderCoachView() {
       <div class="sidebar-overlay ${sidebarOpen ? 'open' : ''}" onclick="closeSidebar()"></div>
       <div class="main">
         <div class="mobile-topbar">
-          <div style="font-family:var(--disp);font-size:22px;letter-spacing:2px;color:var(--accent)">PACECOACH</div>
+          <div style="font-family:var(--disp);font-size:22px;letter-spacing:2px;color:var(--accent)">PACECOACH <span class="badge-95 badge-95-xs"><svg width="5" height="9" viewBox="0 0 9 14" fill="none" style="flex-shrink:0"><polygon points="6,0 2,6 5,6 3,14 9,5 5.5,5" fill="rgba(255,255,255,0.9)"/></svg>95</span></div>
           <button class="hamburger" onclick="toggleSidebar()">☰</button>
         </div>
         <div class="page-header">
@@ -1566,8 +3139,11 @@ function renderCoachView() {
               <button class="vs-btn ${currentView === 'list' ? 'active' : ''}" onclick="setView('list')">List</button>
               <button class="vs-btn ${currentView === 'week' ? 'active' : ''}" onclick="setView('week')">Week</button>
               <button class="vs-btn ${currentView === 'progress' ? 'active' : ''}" onclick="setView('progress')">Progress</button>
+              <button class="vs-btn ${currentView === 'records' ? 'active' : ''}" onclick="setView('records')">Records</button>
+              <button class="vs-btn ${currentView === 'feed' ? 'active' : ''}" onclick="setView('feed')">Feed</button>
             </div>
-            <button class="btn btn-ghost btn-sm" onclick="openCreateRace()" style="border-color:var(--warning);color:var(--warning)">+ Race</button>
+            <button class="btn btn-ghost btn-xs" onclick="toggleUnits()" style="font-family:var(--mono);font-size:11px">${usesMiles ? 'MI → KM' : 'KM → MI'}</button>
+            <button class="btn btn-ghost btn-sm" onclick="openCreateRace()" style="border-color:var(--gold);color:var(--gold)">+ Race</button>
             <button class="btn btn-primary" onclick="openCreateSession()">+ New Session</button>
           </div>
         </div>
@@ -1582,9 +3158,13 @@ function renderCoachView() {
 
 async function selectAthlete(id) {
   selectedAthId = id;
+  selectedGroupId = null;
   sidebarOpen = false;
   await loadCoachSessions();
   await loadRaces();
+  await loadPersonalBests();
+  await loadUnavailability();
+  await loadFeed();
   renderApp();
 }
 
@@ -1620,18 +3200,20 @@ function renderAthleteView() {
   }
 
   let content;
-  if (currentView === 'progress') {
+  if (currentView === 'feed') {
+    content = renderFeedView(false);
+  } else if (currentView === 'progress') {
     content = raceSectionHtml({ isCoach: false })
       + `<div id="athlete-charts" class="charts-grid"></div>`;
   } else if (currentView === 'week') {
     const ws = getWeekSessions();
-    content = weekNavHtml()
-      + (ws.length === 0
-        ? `<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-title">NOTHING THIS WEEK</div><div class="empty-sub">No sessions scheduled for this week.</div></div>`
-        : renderWeekGrid(ws, false));
+    content = weekNavHtml() + renderWeekGrid(ws, false);
+  } else if (currentView === 'records') {
+    content = renderRecordsView(false);
   } else {
     const shown = athleteTab === 'upcoming' ? upcoming : past;
-    content = raceSectionHtml({ isCoach: false });
+    content = unavailSectionHtml(false);
+    content += raceSectionHtml({ isCoach: false });
     content += `
       <div class="view-tabs">
         <button class="view-tab ${athleteTab === 'upcoming' ? 'active' : ''}" onclick="switchAthleteTab('upcoming')">Upcoming</button>
@@ -1639,9 +3221,9 @@ function renderAthleteView() {
       </div>
       ${shown.length === 0
         ? `<div class="empty-state">
-            <div class="empty-icon">${athleteTab === 'upcoming' ? '📅' : '📋'}</div>
+            <div class="empty-icon">${athleteTab === 'upcoming' ? '🏎️' : '🏁'}</div>
             <div class="empty-title">NO ${athleteTab === 'upcoming' ? 'UPCOMING' : 'PAST'} SESSIONS</div>
-            <div class="empty-sub">${athleteTab === 'upcoming' ? 'Your coach will assign sessions soon.' : 'Completed sessions appear here.'}</div>
+            <div class="empty-sub">${athleteTab === 'upcoming' ? 'Your crew chief will assign sessions soon.' : 'Finished laps appear here.'}</div>
            </div>`
         : `<div class="sessions-grid">${shown.map(s => listCard(s, { isCoach: false })).join('')}</div>`}`;
   }
@@ -1650,7 +3232,7 @@ function renderAthleteView() {
     <div class="athlete-layout">
       <div class="athlete-header">
         <div>
-          <div style="font-family:var(--disp);font-size:28px;letter-spacing:2px;color:var(--accent);margin-bottom:2px">PACECOACH</div>
+          <div style="font-family:var(--disp);font-size:28px;letter-spacing:2px;color:var(--accent);margin-bottom:2px">PACECOACH <span class="badge-95 badge-95-md"><svg width="7" height="11" viewBox="0 0 9 14" fill="none" style="flex-shrink:0"><polygon points="6,0 2,6 5,6 3,14 9,5 5.5,5" fill="rgba(255,255,255,0.9)"/></svg>95</span></div>
           <div style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">${currentProfile.full_name}</div>
         </div>
         <button class="btn btn-ghost btn-sm" onclick="handleLogout()">Sign Out</button>
@@ -1659,7 +3241,7 @@ function renderAthleteView() {
       <div class="stats-strip">
         <div class="stats-tile"><div class="stats-tile-val">${upcoming.length}</div><div class="stats-tile-lbl">Upcoming</div></div>
         <div class="stats-tile"><div class="stats-tile-val">${Object.keys(logs).length}</div><div class="stats-tile-lbl">Logged</div></div>
-        <div class="stats-tile"><div class="stats-tile-val">${totalKm.toFixed(1)}</div><div class="stats-tile-lbl">Total km</div></div>
+        <div class="stats-tile"><div class="stats-tile-val">${displayDist(totalKm).toFixed(1)}</div><div class="stats-tile-lbl">Total ${distUnit()}</div></div>
         <div class="stats-tile"><div class="stats-tile-val" style="color:var(--warning)">${streak > 0 ? streak + 'w' : '—'}</div><div class="stats-tile-lbl">Streak</div></div>
       </div>
 
@@ -1668,6 +3250,14 @@ function renderAthleteView() {
           <button class="vs-btn ${currentView === 'list' ? 'active' : ''}" onclick="setView('list')">List</button>
           <button class="vs-btn ${currentView === 'week' ? 'active' : ''}" onclick="setView('week')">Week</button>
           <button class="vs-btn ${currentView === 'progress' ? 'active' : ''}" onclick="setView('progress')">Progress</button>
+          <button class="vs-btn ${currentView === 'records' ? 'active' : ''}" onclick="setView('records')">Records</button>
+          <button class="vs-btn ${currentView === 'feed' ? 'active' : ''}" onclick="setView('feed')">Feed</button>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <button class="btn btn-ghost btn-xs" onclick="toggleUnits()" style="font-family:var(--mono);font-size:11px">${usesMiles ? 'MI → KM' : 'KM → MI'}</button>
+          <button class="btn btn-ghost btn-sm" onclick="openAthleteRace()" style="border-color:var(--gold);color:var(--gold)">+ My Race</button>
+          <button class="btn btn-ghost btn-sm" onclick="openAddExtraSession()" style="border-color:var(--purple);color:var(--purple)">+ Log Session</button>
+          <button class="btn btn-ghost btn-sm" onclick="openAddUnavailability()" style="border-color:var(--danger);color:var(--danger)">⊘ Unavailable</button>
         </div>
       </div>
 
@@ -1720,13 +3310,29 @@ async function onSignIn(user) {
   currentProfile = profile;
   el('auth-screen').style.display = 'none';
   el('app').style.display = 'block';
+
+  // Play Ka-chow sound
+  const audio = el('ka-chow-sound');
+  if (audio) {
+    audio.currentTime = 0;
+    audio.play().catch(e => console.log('Audio play blocked:', e));
+  }
+
   if (profile.role === 'coach') {
     await loadAthletes();
     await loadCoachSessions();
     await loadRaces();
+    await loadPersonalBests();
+    await loadUnavailability();
+    await loadGroups();
+    await loadFeed();
   } else {
     await loadAthleteSessions();
     await loadRaces();
+    await loadPersonalBests();
+    await loadUnavailability();
+    await loadGroups();
+    await loadFeed();
   }
   renderApp();
 }
