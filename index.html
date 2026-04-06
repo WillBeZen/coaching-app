@@ -1656,7 +1656,7 @@ function predictTime(vdot, distance_m) {
     const v = distance_m / mid;
     const est = vdotVO2(v) / vdotFraction(mid);
     if (Math.abs(est - vdot) < 0.001) return mid * 60;
-    if (est > vdot) hi = mid; else lo = mid;
+    if (est > vdot) lo = mid; else hi = mid;
     if ((hi - lo) < 0.0001) break;
   }
   return ((lo + hi) / 2) * 60;
@@ -1677,8 +1677,9 @@ function secondsToTimeStr(s) {
 // Format decimal minutes → "M:SS" pace string
 function fmtPace(decMin) {
   if (decMin == null || decMin <= 0) return '—';
-  const m = Math.floor(decMin);
-  const s = Math.round((decMin - m) * 60);
+  const totalSec = Math.round(decMin * 60);
+  const m = Math.floor(totalSec / 60);
+  const s = totalSec % 60;
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
