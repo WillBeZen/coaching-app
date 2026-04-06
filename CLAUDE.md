@@ -136,8 +136,8 @@ Races have an optional `event` field. Standard events include: `800m`, `1500m`, 
 - **Mathematical model**: Daniels & Gilbert (1979) regression equations — VO2 cost of running + biexponential sustainable fraction of VO2max.
 - **Functions**: `vdotVO2(v)`, `vdotFraction(t)`, `calcVDOT(distance_m, time_seconds)`, `velocityFromVO2(vo2)`, `predictTime(vdot, distance_m)`, `vdotTrainingPaces(vdot)`, `bestVDOT(athletePBs)`.
 - **Training zones**: Easy (59–74%), Marathon (75–84%), Threshold (83–88%), Interval (95–100%), Repetition (105–120%) — all as % of VO2max.
-- **VDOT source priority**: `predicted_time` → `sb_time` → `pb_time`. Highest VDOT across all events is used.
-- **`predicted_time`**: Nullable column on `personal_bests`. Coach-editable only. Stored in same MM:SS / HH:MM:SS format.
+- **VDOT source priority (3-tier)**: (1) Season Bests across all events → highest VDOT; (2) PBs less than 1 year old → highest VDOT; (3) Predicted 5K time (fallback). Higher tiers take precedence.
+- **`predicted_time`**: Nullable column on `personal_bests`. Used only on the `5km` row as the tier-3 fallback. Editable by both athlete and coach via Paces tab input.
 - **UI**: Dedicated "Paces" tab in both coach & athlete views. VDOT hero panel + training paces grid + race predictions table. VDOT badge in all-athletes paces view. Pace hint in session creation modal mapped by session type to zone.
 
 ## Current Focus / Known Issues

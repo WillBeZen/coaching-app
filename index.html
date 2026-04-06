@@ -913,16 +913,6 @@
         <input type="date" id="pb-sb-date" />
       </div>
     </div>
-    <div class="form-row" id="pb-predicted-row" style="display:none">
-      <div class="form-group">
-        <label>Predicted SB (Coach)</label>
-        <input type="text" id="pb-predicted-time" placeholder="e.g. 3:42:00" oninput="updatePredictedVDOT()" />
-      </div>
-      <div class="form-group">
-        <label>Predicted VDOT</label>
-        <div id="pb-predicted-vdot" class="vdot-live-preview">—</div>
-      </div>
-    </div>
     <div id="pb-err" class="err-msg"></div>
     <div style="display:flex;gap:10px;margin-top:8px">
       <button class="btn btn-ghost" onclick="closeModal('m-edit-pb')">Cancel</button>
@@ -1480,11 +1470,8 @@ function openEditPB(eventLabel) {
   el('pb-pb-date').value  = existing?.pb_date || '';
   el('pb-sb-time').value  = existing?.sb_time || '';
   el('pb-sb-date').value  = existing?.sb_date || '';
-  el('pb-predicted-time').value = existing?.predicted_time || '';
-  el('pb-predicted-row').style.display = currentProfile?.role === 'coach' ? 'flex' : 'none';
   el('pb-err').textContent = '';
   el('pb-delete-btn').style.display = existing ? 'block' : 'none';
-  updatePredictedVDOT();
   openModal('m-edit-pb');
 }
 
@@ -1492,37 +1479,21 @@ function openAddPB() {
   el('pb-modal-title').textContent = 'ADD PB';
   el('pb-event').innerHTML = eventSelectOptions();
   el('pb-event-hidden').value = '';
-  ['pb-pb-time','pb-pb-date','pb-sb-time','pb-sb-date','pb-predicted-time'].forEach(id => el(id).value = '');
-  el('pb-predicted-row').style.display = currentProfile?.role === 'coach' ? 'flex' : 'none';
-  el('pb-predicted-vdot').textContent = '—';
+  ['pb-pb-time','pb-pb-date','pb-sb-time','pb-sb-date'].forEach(id => el(id).value = '');
   el('pb-err').textContent = '';
   el('pb-delete-btn').style.display = 'none';
   openModal('m-edit-pb');
-}
-
-function updatePredictedVDOT() {
-  const eventVal = el('pb-event').value;
-  const predTime = val('pb-predicted-time');
-  const info = STANDARD_EVENTS.find(e => e.label === eventVal);
-  const secs = timeToSeconds(predTime);
-  if (info && secs) {
-    const v = calcVDOT(info.distance_m, secs);
-    el('pb-predicted-vdot').textContent = v ? v.toFixed(1) : '—';
-  } else {
-    el('pb-predicted-vdot').textContent = '—';
-  }
 }
 
 async function handleSavePB() {
   const eventVal  = el('pb-event').value;
   const pbTime    = val('pb-pb-time'), pbDate = val('pb-pb-date');
   const sbTime    = val('pb-sb-time'), sbDate = val('pb-sb-date');
-  const predTime  = val('pb-predicted-time');
   const existingId = el('pb-event-hidden').value;
   const errEl = el('pb-err'), btn = el('pb-save-btn');
   errEl.textContent = '';
   if (!eventVal)  { errEl.textContent = 'Please select an event.'; return; }
-  if (!pbTime && !sbTime && !predTime) { errEl.textContent = 'Enter at least a PB, SB, or predicted time.'; return; }
+  if (!pbTime && !sbTime) { errEl.textContent = 'Enter at least a PB or SB time.'; return; }
 
   const info = STANDARD_EVENTS.find(e => e.label === eventVal);
   const payload = {
@@ -1530,7 +1501,6 @@ async function handleSavePB() {
     distance_m: info?.distance_m || 0,
     pb_time: pbTime || null, pb_date: pbDate || null,
     sb_time: sbTime || null, sb_date: sbDate || null,
-    predicted_time: predTime || null,
   };
 
   setLoading(btn, true);
@@ -1708,29 +1678,75 @@ function vdotTrainingPaces(vdot) {
 }
 
 // Select best VDOT from an athlete's personal_bests array
-// Priority: predicted_time → sb_time → pb_time.  Highest VDOT wins.
+// 3-tier hierarchy:
+//   1. Season Bests (sb_time) across all events → highest VDOT
+//   2. PBs (pb_time) where pb_date < 1 year old → highest VDOT (only if tier 1 empty)
+//   3. Predicted 5K time (predicted_time on 5km row) → VDOT (only if tiers 1+2 empty)
 function bestVDOT(athletePBs) {
   if (!athletePBs?.length) return null;
+  const now = new Date();
+  const oneYearAgo = new Date(now.getFullYear() - 1, now.getMonth(), now.getDate());
+
+  // Tier 1: Season Bests
   let best = null;
   for (const row of athletePBs) {
-    const dist = row.distance_m;
-    if (!dist) continue;
-    const sources = [
-      { type: 'Predicted', time: row.predicted_time },
-      { type: 'SB',        time: row.sb_time },
-      { type: 'PB',        time: row.pb_time },
-    ];
-    for (const src of sources) {
-      const secs = timeToSeconds(src.time);
-      if (!secs) continue;
-      const v = calcVDOT(dist, secs);
-      if (v && (!best || v > best.vdot)) {
-        best = { vdot: v, event: row.event, time: src.time, source_type: src.type };
-      }
-      break;  // use first available source for this event, then move on
+    if (!row.distance_m || !row.sb_time) continue;
+    const secs = timeToSeconds(row.sb_time);
+    if (!secs) continue;
+    const v = calcVDOT(row.distance_m, secs);
+    if (v && (!best || v > best.vdot)) {
+      best = { vdot: v, event: row.event, time: row.sb_time, source_type: 'SB', tier: 1 };
     }
   }
-  return best;
+  if (best) return best;
+
+  // Tier 2: PBs less than 1 year old
+  for (const row of athletePBs) {
+    if (!row.distance_m || !row.pb_time || !row.pb_date) continue;
+    const pbDate = new Date(row.pb_date + 'T00:00:00');
+    if (pbDate < oneYearAgo) continue;
+    const secs = timeToSeconds(row.pb_time);
+    if (!secs) continue;
+    const v = calcVDOT(row.distance_m, secs);
+    if (v && (!best || v > best.vdot)) {
+      best = { vdot: v, event: row.event, time: row.pb_time, source_type: 'PB', tier: 2 };
+    }
+  }
+  if (best) return best;
+
+  // Tier 3: Predicted 5K time (stored as predicted_time on 5km row)
+  const pred5k = athletePBs.find(r => r.event === '5km' && r.predicted_time);
+  if (pred5k) {
+    const secs = timeToSeconds(pred5k.predicted_time);
+    if (secs) {
+      const v = calcVDOT(5000, secs);
+      if (v) return { vdot: v, event: '5km', time: pred5k.predicted_time, source_type: 'Predicted 5K', tier: 3 };
+    }
+  }
+
+  return null;
+}
+
+// Save/update predicted 5K time (used by both athlete and coach)
+async function savePredicted5K(athleteId) {
+  const inputEl = el('pred5k-input');
+  const errEl = el('pred5k-err');
+  if (!inputEl) return;
+  const timeStr = inputEl.value.trim();
+  if (errEl) errEl.textContent = '';
+  if (!timeStr) { if (errEl) errEl.textContent = 'Enter a time (MM:SS or HH:MM:SS).'; return; }
+  const secs = timeToSeconds(timeStr);
+  if (!secs) { if (errEl) errEl.textContent = 'Invalid format. Use MM:SS or HH:MM:SS.'; return; }
+
+  const { error } = await sb.from('personal_bests').upsert({
+    athlete_id: athleteId, event: '5km', distance_m: 5000,
+    predicted_time: timeStr,
+  }, { onConflict: 'athlete_id,event' });
+
+  if (error) { if (errEl) errEl.textContent = error.message; return; }
+  toast('Predicted 5K saved!', 'ok');
+  await loadPersonalBests();
+  renderApp();
 }
 
 // ══════════════════════════════════════════════════
@@ -3250,7 +3266,7 @@ function vdotPanelHtml(athletePBs, athleteName, isCoach) {
     <div class="vdot-hero" style="margin-bottom:16px">
       <div class="vdot-label">VDOT</div>
       <div style="color:var(--text-dim);font-size:13px;margin-top:8px">
-        No times recorded yet. ${isCoach ? 'Add a PB, SB, or predicted time to calculate VDOT.' : 'Log a PB or race result to see your VDOT.'}
+        No pacing data available. Enter a predicted 5K time below to get started.
       </div>
     </div>`;
 
@@ -3306,6 +3322,11 @@ function vdotPanelHtml(athletePBs, athleteName, isCoach) {
       <div class="vdot-label">VDOT</div>
       <div class="vdot-score">${b.vdot.toFixed(1)}</div>
       <div class="vdot-source">Based on ${b.event} ${b.source_type}: ${b.time}</div>
+      <div style="font-size:10px;color:var(--text-dim);margin-top:4px;font-family:var(--mono)">${
+        b.tier === 1 ? 'Source: Season Best' :
+        b.tier === 2 ? 'Source: PB (less than 1 year old)' :
+        'Source: Predicted 5K — enter an SB or recent PB for more accuracy'
+      }</div>
     </div>
 
     <div class="vdot-section-title">TRAINING PACES</div>
@@ -3329,6 +3350,30 @@ function vdotPanelHtml(athletePBs, athleteName, isCoach) {
   `;
 }
 
+function predicted5kInputHtml(athleteId, athletePBs) {
+  const existing = athletePBs.find(r => r.event === '5km');
+  const currentPred = existing?.predicted_time || '';
+  const b = bestVDOT(athletePBs);
+  const isActive = b?.tier === 3;
+  return `
+    <div class="records-wrap" style="margin-top:16px;padding:16px">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+        <div class="vdot-section-title" style="margin:0">${isActive ? '⚡ PREDICTED 5K (ACTIVE)' : 'PREDICTED 5K OVERRIDE'}</div>
+        ${isActive ? '<span style="font-size:10px;color:var(--gold);font-family:var(--mono)">Currently driving your paces</span>' : ''}
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:10px">
+        ${b && b.tier < 3
+          ? 'Your paces are based on race data. Enter a predicted 5K to override.'
+          : 'No recent race data found. Enter a predicted 5K time to generate paces.'}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <input type="text" id="pred5k-input" value="${currentPred}" placeholder="e.g. 22:30" style="width:120px;font-family:var(--mono);font-size:14px" />
+        <button class="btn btn-primary btn-sm" onclick="savePredicted5K('${athleteId}')">Save</button>
+        <div id="pred5k-err" class="err-msg" style="margin:0"></div>
+      </div>
+    </div>`;
+}
+
 function renderPacesView(isCoach) {
   if (isCoach) {
     if (selectedAthId === 'all') {
@@ -3349,12 +3394,15 @@ function renderPacesView(isCoach) {
     } else {
       const athPBs = personalBests.filter(p => p.athlete_id === selectedAthId);
       const ath = athletes.find(a => a.id === selectedAthId);
-      return `<div class="section-heading">PACES — ${(ath?.full_name || '').toUpperCase()}</div>${vdotPanelHtml(athPBs, ath?.full_name, true)}`;
+      return `<div class="section-heading">PACES — ${(ath?.full_name || '').toUpperCase()}</div>
+        ${vdotPanelHtml(athPBs, ath?.full_name, true)}
+        ${predicted5kInputHtml(selectedAthId, athPBs)}`;
     }
   } else {
     return `
       <div class="section-heading">MY PACES</div>
-      ${vdotPanelHtml(personalBests, currentProfile?.full_name, false)}`;
+      ${vdotPanelHtml(personalBests, currentProfile?.full_name, false)}
+      ${predicted5kInputHtml(currentUser.id, personalBests)}`;
   }
 }
 
