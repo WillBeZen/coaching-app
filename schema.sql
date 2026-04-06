@@ -67,6 +67,7 @@ CREATE TABLE public.personal_bests (
   sb_date date,
   pb_race_id uuid,
   sb_race_id uuid,
+  predicted_time text,
   created_at timestamp with time zone DEFAULT now(),
   updated_at timestamp with time zone DEFAULT now(),
   CONSTRAINT personal_bests_pkey PRIMARY KEY (id),

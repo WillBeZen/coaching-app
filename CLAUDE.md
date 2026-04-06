@@ -129,6 +129,16 @@ Races have an optional `event` field. Standard events include: `800m`, `1500m`, 
 - ✅ Athlete self-logged extra sessions: Log sessions outside coach plan, purple "EXTRA" badge, stored as `coach_id = athlete_id, is_extra = true`.
 - ✅ Training Groups: Coach creates groups with colour/emoji. Sidebar restructured with collapsible group sections. Athletes mute/leave groups. Soft-delete via `left_at`.
 - ✅ Activity Feed: Auto-posts on PB/SB/race/session. Coach announcements. Emoji reactions (👏🔥💪🎉). Per-group tab filtering. History hidden when athlete leaves (not deleted).
+- ✅ VDOT Pacing Calculator: Daniels & Gilbert (1979) equations. Calculates VDOT from SB/PB/predicted time. Training paces (E/M/T/I/R zones) in both min/km and min/mile. Race time predictions for all standard events. VDOT panel in Records tab. Session creation pace hints. Coach can enter predicted SB with live VDOT preview.
+
+## VDOT System
+
+- **Mathematical model**: Daniels & Gilbert (1979) regression equations — VO2 cost of running + biexponential sustainable fraction of VO2max.
+- **Functions**: `vdotVO2(v)`, `vdotFraction(t)`, `calcVDOT(distance_m, time_seconds)`, `velocityFromVO2(vo2)`, `predictTime(vdot, distance_m)`, `vdotTrainingPaces(vdot)`, `bestVDOT(athletePBs)`.
+- **Training zones**: Easy (59–74%), Marathon (75–84%), Threshold (83–88%), Interval (95–100%), Repetition (105–120%) — all as % of VO2max.
+- **VDOT source priority**: `predicted_time` → `sb_time` → `pb_time`. Highest VDOT across all events is used.
+- **`predicted_time`**: Nullable column on `personal_bests`. Coach-editable only. Stored in same MM:SS / HH:MM:SS format.
+- **UI**: VDOT hero panel + training paces grid + race predictions table in Records tab. VDOT badge in all-athletes view. Pace hint in session creation modal mapped by session type to zone.
 
 ## Current Focus / Known Issues
 

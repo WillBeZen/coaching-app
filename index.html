@@ -366,6 +366,23 @@
     .records-athlete-group { margin-bottom: 24px; }
     .records-athlete-hdr { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 
+    /* ── VDOT PANEL ────────────────────────────────────────── */
+    .vdot-hero { background: var(--surface); border: 1px solid var(--border); border-radius: var(--rl); padding: 24px; margin-bottom: 16px; text-align: center; }
+    .vdot-score { font-family: var(--disp); font-size: 56px; color: var(--gold); letter-spacing: 2px; line-height: 1; }
+    .vdot-label { font-family: var(--disp); font-size: 14px; letter-spacing: 2px; color: var(--text-dim); margin-bottom: 4px; }
+    .vdot-source { font-family: var(--mono); font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+    .vdot-zones-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px; margin-bottom: 16px; }
+    .vdot-zone-card { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r); padding: 14px; }
+    .vdot-zone-hdr { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+    .vdot-zone-key { display: inline-block; font-family: var(--disp); font-size: 18px; letter-spacing: 1px; padding: 2px 10px; border-radius: 4px; color: #fff; }
+    .vdot-zone-name { font-size: 12px; font-weight: 600; color: var(--text); }
+    .vdot-zone-pace { font-family: var(--mono); font-size: 14px; font-weight: 700; line-height: 1.5; }
+    .vdot-zone-unit { font-size: 10px; color: var(--text-dim); font-family: var(--mono); }
+    .vdot-badge { font-family: var(--mono); font-size: 11px; font-weight: 700; color: var(--gold); background: rgba(255,215,0,.1); padding: 2px 8px; border-radius: 10px; border: 1px solid rgba(255,215,0,.3); }
+    .vdot-badge.empty { color: var(--text-dim); background: var(--surface2); border-color: var(--border); }
+    .vdot-section-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .12em; color: var(--text-dim); margin-bottom: 10px; }
+    .vdot-live-preview { padding: 10px; font-family: var(--mono); color: var(--gold); font-size: 18px; font-weight: 700; }
+
     /* ── MCQUEEN #95 BADGE ──────────────────────────────────── */
     .badge-95 {
       display: inline-flex; align-items: center; justify-content: center; gap: 1px;
@@ -600,7 +617,7 @@
     <div class="form-row">
       <div class="form-group">
         <label>Type</label>
-        <select id="s-type">
+        <select id="s-type" onchange="updateSessionPaceHint()">
           <option value="easy">Easy Run</option>
           <option value="tempo">Tempo</option>
           <option value="intervals">Intervals</option>
@@ -635,6 +652,7 @@
         <label id="s-pace-lbl">Target Pace (min/km)</label>
         <input type="text" id="s-pace" placeholder="e.g. 4:30" />
         <div class="pace-hint">Format: MM:SS</div>
+        <div class="pace-hint" id="s-vdot-hint" style="color:var(--gold);margin-top:2px"></div>
       </div>
       <div class="form-group">
         <label>HR Zone / RPE</label>
@@ -893,6 +911,16 @@
       <div class="form-group">
         <label>SB Date</label>
         <input type="date" id="pb-sb-date" />
+      </div>
+    </div>
+    <div class="form-row" id="pb-predicted-row" style="display:none">
+      <div class="form-group">
+        <label>Predicted SB (Coach)</label>
+        <input type="text" id="pb-predicted-time" placeholder="e.g. 3:42:00" oninput="updatePredictedVDOT()" />
+      </div>
+      <div class="form-group">
+        <label>Predicted VDOT</label>
+        <div id="pb-predicted-vdot" class="vdot-live-preview">—</div>
       </div>
     </div>
     <div id="pb-err" class="err-msg"></div>
@@ -1452,8 +1480,11 @@ function openEditPB(eventLabel) {
   el('pb-pb-date').value  = existing?.pb_date || '';
   el('pb-sb-time').value  = existing?.sb_time || '';
   el('pb-sb-date').value  = existing?.sb_date || '';
+  el('pb-predicted-time').value = existing?.predicted_time || '';
+  el('pb-predicted-row').style.display = currentProfile?.role === 'coach' ? 'flex' : 'none';
   el('pb-err').textContent = '';
   el('pb-delete-btn').style.display = existing ? 'block' : 'none';
+  updatePredictedVDOT();
   openModal('m-edit-pb');
 }
 
@@ -1461,21 +1492,37 @@ function openAddPB() {
   el('pb-modal-title').textContent = 'ADD PB';
   el('pb-event').innerHTML = eventSelectOptions();
   el('pb-event-hidden').value = '';
-  ['pb-pb-time','pb-pb-date','pb-sb-time','pb-sb-date'].forEach(id => el(id).value = '');
+  ['pb-pb-time','pb-pb-date','pb-sb-time','pb-sb-date','pb-predicted-time'].forEach(id => el(id).value = '');
+  el('pb-predicted-row').style.display = currentProfile?.role === 'coach' ? 'flex' : 'none';
+  el('pb-predicted-vdot').textContent = '—';
   el('pb-err').textContent = '';
   el('pb-delete-btn').style.display = 'none';
   openModal('m-edit-pb');
+}
+
+function updatePredictedVDOT() {
+  const eventVal = el('pb-event').value;
+  const predTime = val('pb-predicted-time');
+  const info = STANDARD_EVENTS.find(e => e.label === eventVal);
+  const secs = timeToSeconds(predTime);
+  if (info && secs) {
+    const v = calcVDOT(info.distance_m, secs);
+    el('pb-predicted-vdot').textContent = v ? v.toFixed(1) : '—';
+  } else {
+    el('pb-predicted-vdot').textContent = '—';
+  }
 }
 
 async function handleSavePB() {
   const eventVal  = el('pb-event').value;
   const pbTime    = val('pb-pb-time'), pbDate = val('pb-pb-date');
   const sbTime    = val('pb-sb-time'), sbDate = val('pb-sb-date');
+  const predTime  = val('pb-predicted-time');
   const existingId = el('pb-event-hidden').value;
   const errEl = el('pb-err'), btn = el('pb-save-btn');
   errEl.textContent = '';
   if (!eventVal)  { errEl.textContent = 'Please select an event.'; return; }
-  if (!pbTime && !sbTime) { errEl.textContent = 'Enter at least a PB or SB time.'; return; }
+  if (!pbTime && !sbTime && !predTime) { errEl.textContent = 'Enter at least a PB, SB, or predicted time.'; return; }
 
   const info = STANDARD_EVENTS.find(e => e.label === eventVal);
   const payload = {
@@ -1483,6 +1530,7 @@ async function handleSavePB() {
     distance_m: info?.distance_m || 0,
     pb_time: pbTime || null, pb_date: pbDate || null,
     sb_time: sbTime || null, sb_date: sbDate || null,
+    predicted_time: predTime || null,
   };
 
   setLoading(btn, true);
@@ -1557,6 +1605,131 @@ async function checkAndUpdatePB(raceId, actualTime, status) {
       await autoPost('auto_sb', postContent, 'all', null, { event: race.event, time: actualTime });
     }
   }
+}
+
+// ══════════════════════════════════════════════════
+//  VDOT CALCULATOR  (Daniels & Gilbert 1979)
+//  All equations from the published regression model.
+//  Ref: "Oxygen Power" — J. Daniels & J. Gilbert, 1979
+// ══════════════════════════════════════════════════
+
+// Equation 1: Oxygen cost of running (mL·kg⁻¹·min⁻¹)
+// v = velocity in metres/minute
+function vdotVO2(v) {
+  return -4.60 + 0.182258 * v + 0.000104 * v * v;
+}
+
+// Equation 2: Fraction of VO2max sustainable over duration t (minutes)
+// Biexponential decay fitted to maximal race data
+function vdotFraction(t) {
+  return 0.8 + 0.1894393 * Math.exp(-0.012778 * t)
+             + 0.2989558 * Math.exp(-0.1932605 * t);
+}
+
+// VDOT from a race result
+function calcVDOT(distance_m, time_seconds) {
+  if (!distance_m || !time_seconds || time_seconds <= 0) return null;
+  const t = time_seconds / 60;          // minutes
+  const v = distance_m / t;             // m/min
+  const vo2 = vdotVO2(v);
+  const frac = vdotFraction(t);
+  if (frac <= 0) return null;
+  return vo2 / frac;
+}
+
+// Invert the VO2-velocity quadratic: solve for v given target VO2
+// 0.000104·v² + 0.182258·v − (4.60 + vo2) = 0
+function velocityFromVO2(vo2) {
+  const a = 0.000104, b = 0.182258, c = -(4.60 + vo2);
+  const disc = b * b - 4 * a * c;
+  if (disc < 0) return null;
+  return (-b + Math.sqrt(disc)) / (2 * a);
+}
+
+// Predict race time (seconds) for a given VDOT and distance via bisection
+function predictTime(vdot, distance_m) {
+  if (!vdot || !distance_m) return null;
+  let lo = distance_m / 600;   // fastest plausible pace (~2:20/km)
+  let hi = distance_m / 50;    // slowest plausible pace (~33:20/km)
+  for (let i = 0; i < 100; i++) {
+    const mid = (lo + hi) / 2;
+    const v = distance_m / mid;
+    const est = vdotVO2(v) / vdotFraction(mid);
+    if (Math.abs(est - vdot) < 0.001) return mid * 60;
+    if (est > vdot) hi = mid; else lo = mid;
+    if ((hi - lo) < 0.0001) break;
+  }
+  return ((lo + hi) / 2) * 60;
+}
+
+// Format seconds → "H:MM:SS" or "M:SS"
+function secondsToTimeStr(s) {
+  if (s == null || s <= 0) return '—';
+  s = Math.round(s);
+  const h = Math.floor(s / 3600);
+  const m = Math.floor((s % 3600) / 60);
+  const sec = s % 60;
+  const ss = String(sec).padStart(2, '0');
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${ss}`;
+  return `${m}:${ss}`;
+}
+
+// Format decimal minutes → "M:SS" pace string
+function fmtPace(decMin) {
+  if (decMin == null || decMin <= 0) return '—';
+  const m = Math.floor(decMin);
+  const s = Math.round((decMin - m) * 60);
+  return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+// Training zones (% of VO2max = % of VDOT)
+const VDOT_ZONES = [
+  { key: 'E', label: 'Easy',       low: 0.59, high: 0.74, color: 'var(--success)' },
+  { key: 'M', label: 'Marathon',   low: 0.75, high: 0.84, color: 'var(--gold)'    },
+  { key: 'T', label: 'Threshold',  low: 0.83, high: 0.88, color: 'var(--accent)'  },
+  { key: 'I', label: 'Interval',   low: 0.95, high: 1.00, color: '#A855F7'        },
+  { key: 'R', label: 'Repetition', low: 1.05, high: 1.20, color: '#FF6B00'        },
+];
+
+// Compute training paces for all zones
+function vdotTrainingPaces(vdot) {
+  return VDOT_ZONES.map(z => {
+    const vFast = velocityFromVO2(z.high * vdot);  // higher %VO2 = faster
+    const vSlow = velocityFromVO2(z.low * vdot);   // lower %VO2 = slower
+    return {
+      ...z,
+      fast_km: vFast ? 1000 / vFast : null,       // min/km (fast end)
+      slow_km: vSlow ? 1000 / vSlow : null,        // min/km (slow end)
+      fast_mi: vFast ? 1609.344 / vFast : null,    // min/mi (fast end)
+      slow_mi: vSlow ? 1609.344 / vSlow : null,    // min/mi (slow end)
+    };
+  });
+}
+
+// Select best VDOT from an athlete's personal_bests array
+// Priority: predicted_time → sb_time → pb_time.  Highest VDOT wins.
+function bestVDOT(athletePBs) {
+  if (!athletePBs?.length) return null;
+  let best = null;
+  for (const row of athletePBs) {
+    const dist = row.distance_m;
+    if (!dist) continue;
+    const sources = [
+      { type: 'Predicted', time: row.predicted_time },
+      { type: 'SB',        time: row.sb_time },
+      { type: 'PB',        time: row.pb_time },
+    ];
+    for (const src of sources) {
+      const secs = timeToSeconds(src.time);
+      if (!secs) continue;
+      const v = calcVDOT(dist, secs);
+      if (v && (!best || v > best.vdot)) {
+        best = { vdot: v, event: row.event, time: src.time, source_type: src.type };
+      }
+      break;  // use first available source for this event, then move on
+    }
+  }
+  return best;
 }
 
 // ══════════════════════════════════════════════════
@@ -1922,7 +2095,29 @@ function openCreateSession() {
   el('s-dist-lbl').textContent = `Target Distance (${distUnit()})`;
   el('s-pace-lbl').textContent = `Target Pace (${paceUnit()})`;
   populateAthleteCheckboxes('s-ath-list', selectedAthId !== 'all' ? [selectedAthId] : []);
+  updateSessionPaceHint();
   openModal('m-session');
+}
+
+const SESSION_TYPE_ZONE = { easy: 'E', tempo: 'T', intervals: 'I', long: 'E', recovery: 'E', race: 'M' };
+
+function updateSessionPaceHint() {
+  const hintEl = el('s-vdot-hint');
+  if (!hintEl) return;
+  if (selectedAthId === 'all' || !selectedAthId) {
+    hintEl.textContent = athletes.length > 1 ? 'Select one athlete for VDOT pacing' : '';
+    return;
+  }
+  const athPBs = personalBests.filter(p => p.athlete_id === selectedAthId);
+  const b = bestVDOT(athPBs);
+  if (!b) { hintEl.textContent = ''; return; }
+  const type = el('s-type').value;
+  const zoneKey = SESSION_TYPE_ZONE[type];
+  if (!zoneKey) { hintEl.textContent = `VDOT ${b.vdot.toFixed(1)}`; return; }
+  const paces = vdotTrainingPaces(b.vdot);
+  const zone = paces.find(z => z.key === zoneKey);
+  if (!zone) { hintEl.textContent = ''; return; }
+  hintEl.textContent = `VDOT ${b.vdot.toFixed(1)} → ${zone.label}: ${fmtPace(zone.slow_km)}–${fmtPace(zone.fast_km)} /km | ${fmtPace(zone.slow_mi)}–${fmtPace(zone.fast_mi)} /mi`;
 }
 
 function populateAthleteCheckboxes(listId, preSelected = []) {
@@ -2762,6 +2957,7 @@ function renderRecordsView(isCoach) {
             <div class="records-athlete-hdr">
               <div class="avatar av-sm">${initials(a.full_name)}</div>
               <div style="font-size:13px;font-weight:600">${a.full_name}</div>
+              ${vdotBadgeHtml(athPBs)}
             </div>
             <div style="font-size:12px;color:var(--text-dim);padding:8px 0">No records logged yet.</div>
           </div>`;
@@ -2770,6 +2966,7 @@ function renderRecordsView(isCoach) {
             <div class="records-athlete-hdr">
               <div class="avatar av-sm">${initials(a.full_name)}</div>
               <div style="font-size:13px;font-weight:600">${a.full_name}</div>
+              ${vdotBadgeHtml(athPBs)}
             </div>
             ${pbTableHtml(athPBs, false)}
           </div>`;
@@ -2779,7 +2976,7 @@ function renderRecordsView(isCoach) {
       const athPBs = personalBests.filter(p => p.athlete_id === selectedAthId);
       const ath = athletes.find(a => a.id === selectedAthId);
       if (!athPBs.length) return `<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-title">NO RECORDS YET</div><div class="empty-sub">${ath?.full_name || 'This athlete'} hasn't logged any PBs yet.</div></div>`;
-      return `<div class="section-heading">RECORDS — ${(ath?.full_name || '').toUpperCase()}</div>${pbTableHtml(athPBs, false)}`;
+      return `<div class="section-heading">RECORDS — ${(ath?.full_name || '').toUpperCase()}</div>${vdotPanelHtml(athPBs, ath?.full_name, true)}${pbTableHtml(athPBs, false)}`;
     }
   } else {
     // Athlete view: show both PBs and unavailability
@@ -2814,6 +3011,7 @@ function renderRecordsView(isCoach) {
         <div class="section-heading" style="margin:0">MY RECORDS</div>
         <button class="btn btn-ghost btn-sm" onclick="openAddPB()" style="border-color:var(--gold);color:var(--gold)">+ Add PB</button>
       </div>
+      ${vdotPanelHtml(personalBests, currentProfile?.full_name, false)}
       ${!personalBests.length
         ? `<div class="empty-state"><div class="empty-icon">🏆</div><div class="empty-title">NO RECORDS YET</div><div class="empty-sub">Add your PBs manually or log a race result with a standard event to auto-record.</div></div>`
         : pbTableHtml(personalBests, true)}
@@ -3036,6 +3234,101 @@ function pbTableHtml(pbs, editable) {
         </tbody>
       </table>
     </div>`;
+}
+
+// ══════════════════════════════════════════════════
+//  VDOT PANEL RENDERING
+// ══════════════════════════════════════════════════
+
+function vdotBadgeHtml(athletePBs) {
+  const b = bestVDOT(athletePBs);
+  if (!b) return '<span class="vdot-badge empty">No VDOT</span>';
+  return `<span class="vdot-badge">VDOT ${b.vdot.toFixed(1)}</span>`;
+}
+
+function vdotPanelHtml(athletePBs, athleteName, isCoach) {
+  const b = bestVDOT(athletePBs);
+  if (!b) return `
+    <div class="vdot-hero" style="margin-bottom:16px">
+      <div class="vdot-label">VDOT</div>
+      <div style="color:var(--text-dim);font-size:13px;margin-top:8px">
+        No times recorded yet. ${isCoach ? 'Add a PB, SB, or predicted time to calculate VDOT.' : 'Log a PB or race result to see your VDOT.'}
+      </div>
+    </div>`;
+
+  const paces = vdotTrainingPaces(b.vdot);
+
+  // Deduplicate standard events by distance_m for predictions
+  const seen = new Set();
+  const predEvents = STANDARD_EVENTS.filter(e => {
+    if (seen.has(e.distance_m)) return false;
+    seen.add(e.distance_m);
+    return true;
+  });
+
+  // Build zone cards
+  const zonesHtml = paces.map(z => `
+    <div class="vdot-zone-card" style="border-left: 3px solid ${z.color}">
+      <div class="vdot-zone-hdr">
+        <span class="vdot-zone-key" style="background:${z.color}">${z.key}</span>
+        <span class="vdot-zone-name">${z.label}</span>
+      </div>
+      <div class="vdot-zone-pace" style="color:${z.color}">
+        ${fmtPace(z.slow_km)} – ${fmtPace(z.fast_km)}
+      </div>
+      <div class="vdot-zone-unit">min/km</div>
+      <div class="vdot-zone-pace" style="color:${z.color};margin-top:4px">
+        ${fmtPace(z.slow_mi)} – ${fmtPace(z.fast_mi)}
+      </div>
+      <div class="vdot-zone-unit">min/mi</div>
+    </div>`).join('');
+
+  // Build race predictions table
+  const predRows = predEvents.map(ev => {
+    const timeSec = predictTime(b.vdot, ev.distance_m);
+    const paceKm = timeSec ? (timeSec / 60) / (ev.distance_m / 1000) : null;
+    const paceMi = timeSec ? (timeSec / 60) / (ev.distance_m / 1609.344) : null;
+    // Check if athlete has an actual time for this event
+    const actual = athletePBs.find(p => p.distance_m === ev.distance_m);
+    const actualTime = actual?.sb_time || actual?.pb_time;
+    const actualSecs = timeToSeconds(actualTime);
+    const delta = (actualSecs && timeSec) ? actualSecs - timeSec : null;
+    return `
+      <tr>
+        <td class="pb-event">${ev.label}</td>
+        <td class="pb-time-cell">${secondsToTimeStr(timeSec)}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">${fmtPace(paceKm)}</td>
+        <td style="font-family:var(--mono);font-size:12px;color:var(--text-muted)">${fmtPace(paceMi)}</td>
+        ${actualTime ? `<td style="font-family:var(--mono);font-size:11px;color:${delta > 0 ? 'var(--accent)' : 'var(--success)'}">${actualTime}${delta !== null ? ` (${delta > 0 ? '+' : ''}${secondsToTimeStr(Math.abs(delta))})` : ''}</td>` : '<td style="font-size:11px;color:var(--text-dim)">—</td>'}
+      </tr>`;
+  }).join('');
+
+  return `
+    <div class="vdot-hero">
+      <div class="vdot-label">VDOT</div>
+      <div class="vdot-score">${b.vdot.toFixed(1)}</div>
+      <div class="vdot-source">Based on ${b.event} ${b.source_type}: ${b.time}</div>
+    </div>
+
+    <div class="vdot-section-title">TRAINING PACES</div>
+    <div class="vdot-zones-grid">${zonesHtml}</div>
+
+    <div class="vdot-section-title">RACE PREDICTIONS</div>
+    <div class="records-wrap">
+      <table class="records-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>Predicted</th>
+            <th>Pace/km</th>
+            <th>Pace/mi</th>
+            <th>Actual</th>
+          </tr>
+        </thead>
+        <tbody>${predRows}</tbody>
+      </table>
+    </div>
+  `;
 }
 
 // ══════════════════════════════════════════════════
