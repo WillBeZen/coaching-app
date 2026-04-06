@@ -131,6 +131,22 @@ Races have an optional `event` field. Standard events include: `800m`, `1500m`, 
 - ✅ Activity Feed: Auto-posts on PB/SB/race/session. Coach announcements. Emoji reactions (👏🔥💪🎉). Per-group tab filtering. History hidden when athlete leaves (not deleted).
 - ✅ VDOT Pacing Calculator: Daniels & Gilbert (1979) equations. Calculates VDOT from SB/PB/predicted time. Training paces (E/M/T/I/R zones) in both min/km and min/mile. Race time predictions for all standard events. VDOT panel in Records tab. Session creation pace hints. Coach can enter predicted SB with live VDOT preview.
 
+## Session Editing
+
+- **Coaches can edit sessions** they have created. Click "Edit" button in session detail modal or list card.
+- Modal (`m-session`) is reused for both create and edit modes:
+  - Create: title "NEW SESSION", athlete list shown, button "Create Session"
+  - Edit: title "EDIT SESSION", athlete list hidden (single athlete only), button "Save Changes"
+- Edit operates via `sb.from('sessions').update(payload).eq('id', editingSessionId).eq('coach_id', currentUser.id)`
+- **RLS Requirement**: Must add UPDATE policy to `sessions` table:
+  ```sql
+  CREATE POLICY "sessions: coach update own"
+  ON public.sessions FOR UPDATE
+  USING (coach_id = auth.uid())
+  WITH CHECK (coach_id = auth.uid());
+  ```
+- No re-notification on edits (coaches only; athletes already have the session in their view).
+
 ## VDOT System
 
 - **Mathematical model**: Daniels & Gilbert (1979) regression equations — VO2 cost of running + biexponential sustainable fraction of VO2max.
@@ -142,7 +158,6 @@ Races have an optional `event` field. Standard events include: `800m`, `1500m`, 
 
 ## Current Focus / Known Issues
 
-- The app has no edit-session flow yet — coaches can only create, duplicate, or delete sessions.
 - No password reset flow implemented.
 - Profile page for editing PBs: Currently editable only from Records tab. A dedicated settings page is a future enhancement.
 - Pending test: Verify unavailability, extra sessions, and PB auto-updates work end-to-end in production (curious-dieffenbachia-b81623.netlify.app).

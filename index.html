@@ -598,10 +598,10 @@
 <div class="modal-overlay" id="m-session">
   <div class="modal">
     <div class="modal-header">
-      <div class="modal-title">NEW SESSION</div>
+      <div class="modal-title" id="s-modal-title">NEW SESSION</div>
       <button class="modal-close" onclick="closeModal('m-session')">✕</button>
     </div>
-    <div class="form-group">
+    <div class="form-group" id="s-ath-section">
       <div class="multi-list-header">
         <label style="margin:0">Athletes</label>
         <button class="btn btn-xs btn-ghost" onclick="toggleSelectAll('s-ath-list')">Select All</button>
@@ -1146,11 +1146,12 @@ function paceUnit() { return usesMiles ? 'min/mi' : 'min/km'; }
 function toggleUnits() { usesMiles = !usesMiles; localStorage.setItem('pacecoach_miles', usesMiles); renderApp(); }
 
 // Modal state
-let dupSourceId      = null;
-let currentRating    = 0;
-let sidebarOpen      = false;
-let editingUnavailId = null;
-let editingGroupId   = null;
+let dupSourceId       = null;
+let editingSessionId  = null;
+let currentRating     = 0;
+let sidebarOpen       = false;
+let editingUnavailId  = null;
+let editingGroupId    = null;
 
 // Chart instances (so we can destroy before re-creating)
 let chartInstances = {};
@@ -2105,13 +2106,41 @@ async function handleAddAthlete() {
 //  COACH — CREATE SESSION (multi-athlete)
 // ══════════════════════════════════════════════════
 function openCreateSession() {
+  editingSessionId = null;
   el('s-err').textContent = '';
   ['s-title','s-desc','s-dist','s-dur','s-pace','s-hr','s-notes'].forEach(id => el(id).value = '');
   el('s-date').value = todayStr();
   el('s-type').value = 'easy';
   el('s-dist-lbl').textContent = `Target Distance (${distUnit()})`;
   el('s-pace-lbl').textContent = `Target Pace (${paceUnit()})`;
+  el('s-modal-title').textContent = 'NEW SESSION';
+  el('s-btn').textContent = 'Create Session';
+  el('s-ath-section').style.display = 'block';
   populateAthleteCheckboxes('s-ath-list', selectedAthId !== 'all' ? [selectedAthId] : []);
+  updateSessionPaceHint();
+  openModal('m-session');
+}
+
+function openEditSession(sessionId) {
+  const s = sessions.find(x => x.id === sessionId);
+  if (!s) return;
+  editingSessionId = sessionId;
+  closeModal('m-detail');
+  el('s-err').textContent = '';
+  el('s-title').value = s.title;
+  el('s-type').value = s.session_type;
+  el('s-date').value = s.scheduled_date;
+  el('s-desc').value = s.description || '';
+  el('s-dist').value = s.distance_km != null ? displayDist(s.distance_km) : '';
+  el('s-dur').value = s.duration_min ?? '';
+  el('s-pace').value = s.pace_target || '';
+  el('s-hr').value = s.heart_rate_zone || '';
+  el('s-notes').value = s.coach_notes || '';
+  el('s-dist-lbl').textContent = `Target Distance (${distUnit()})`;
+  el('s-pace-lbl').textContent = `Target Pace (${paceUnit()})`;
+  el('s-modal-title').textContent = 'EDIT SESSION';
+  el('s-btn').textContent = 'Save Changes';
+  el('s-ath-section').style.display = 'none';
   updateSessionPaceHint();
   openModal('m-session');
 }
@@ -2170,27 +2199,56 @@ function toggleSelectAll(listId) {
 }
 
 async function handleCreateSession() {
-  const athleteIds = getChecked('s-ath-list');
   const title = val('s-title'), type = val('s-type'), date = val('s-date'),
         desc  = val('s-desc'),  dist = val('s-dist'),  dur  = val('s-dur'),
         pace  = val('s-pace'),  hr   = val('s-hr'),    notes = val('s-notes');
   const errEl = el('s-err'), btn = el('s-btn');
   errEl.textContent = '';
+  if (!title) { errEl.textContent = 'Session title is required.'; return; }
+  if (!date)  { errEl.textContent = 'Please set a date.'; return; }
+
+  setLoading(btn, true);
+
+  // EDIT MODE: update single session
+  if (editingSessionId) {
+    const payload = {
+      title, session_type: type, scheduled_date: date,
+      description:    desc  || null,
+      distance_km:    dist  ? Math.round((parseFloat(dist) / (usesMiles ? KM_TO_MI : 1)) * 100) / 100 : null,
+      duration_min:   dur   ? parseInt(dur)    : null,
+      pace_target:    pace  || null,
+      heart_rate_zone: hr   || null,
+      coach_notes:    notes || null,
+    };
+    const { error } = await sb.from('sessions').update(payload)
+      .eq('id', editingSessionId)
+      .eq('coach_id', currentUser.id);
+    setLoading(btn, false, 'Save Changes');
+    if (error) { errEl.textContent = error.message; return; }
+    editingSessionId = null;
+    closeModal('m-session');
+    toast('Session updated ✓', 'ok');
+    await loadCoachSessions();
+    renderApp();
+    return;
+  }
+
+  // CREATE MODE: validate athletes and insert
+  const athleteIds = getChecked('s-ath-list');
   if (!athleteIds.length) { errEl.textContent = 'Select at least one athlete.'; return; }
-  if (!title)              { errEl.textContent = 'Session title is required.'; return; }
-  if (!date)               { errEl.textContent = 'Please set a date.'; return; }
 
   // Check if any selected athlete has unavailability on that date
   const blocked = athleteIds.filter(aid =>
     unavailability.some(u => u.athlete_id === aid && u.start_date <= date && u.end_date >= date)
   );
   if (blocked.length) {
+    setLoading(btn, false, 'Create Session');
     const names = blocked.map(aid => athletes.find(a => a.id === aid)?.full_name).filter(Boolean).join(', ');
     const proceed = confirm(`⚠️ ${names} has marked ${blocked.length > 1 ? 'these dates' : 'this date'} as unavailable. Schedule anyway?`);
     if (!proceed) return;
+    setLoading(btn, true);
   }
 
-  setLoading(btn, true);
   const rows = athleteIds.map(aid => ({
     coach_id: currentUser.id, athlete_id: aid,
     title, session_type: type, scheduled_date: date,
@@ -2604,6 +2662,7 @@ function detailBody(s, log) {
       ${logPanelHtml(log)}
       <div class="card-actions" style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border)">
         ${isCoach ? `
+          <button class="btn btn-ghost btn-sm" onclick="openEditSession('${s.id}')">Edit</button>
           <button class="btn btn-ghost btn-sm" onclick="closeModal('m-detail');openDuplicate('${s.id}')">Duplicate</button>
           <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>
         ` : !completed ? `
@@ -2893,6 +2952,7 @@ function listCard(s, { showAthlete = false, isCoach = false } = {}) {
     ${logPanelHtml(log)}
     <div class="card-actions">
       ${isCoach ? `
+        <button class="btn btn-ghost btn-sm" onclick="openEditSession('${s.id}')">Edit</button>
         <button class="btn btn-ghost btn-sm" onclick="openDuplicate('${s.id}')">Duplicate</button>
         <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>
       ` : !completed ? `
