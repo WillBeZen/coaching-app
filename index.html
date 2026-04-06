@@ -2957,7 +2957,6 @@ function renderRecordsView(isCoach) {
             <div class="records-athlete-hdr">
               <div class="avatar av-sm">${initials(a.full_name)}</div>
               <div style="font-size:13px;font-weight:600">${a.full_name}</div>
-              ${vdotBadgeHtml(athPBs)}
             </div>
             <div style="font-size:12px;color:var(--text-dim);padding:8px 0">No records logged yet.</div>
           </div>`;
@@ -2966,7 +2965,6 @@ function renderRecordsView(isCoach) {
             <div class="records-athlete-hdr">
               <div class="avatar av-sm">${initials(a.full_name)}</div>
               <div style="font-size:13px;font-weight:600">${a.full_name}</div>
-              ${vdotBadgeHtml(athPBs)}
             </div>
             ${pbTableHtml(athPBs, false)}
           </div>`;
@@ -2976,7 +2974,7 @@ function renderRecordsView(isCoach) {
       const athPBs = personalBests.filter(p => p.athlete_id === selectedAthId);
       const ath = athletes.find(a => a.id === selectedAthId);
       if (!athPBs.length) return `<div class="empty-state"><div class="empty-icon">🏁</div><div class="empty-title">NO RECORDS YET</div><div class="empty-sub">${ath?.full_name || 'This athlete'} hasn't logged any PBs yet.</div></div>`;
-      return `<div class="section-heading">RECORDS — ${(ath?.full_name || '').toUpperCase()}</div>${vdotPanelHtml(athPBs, ath?.full_name, true)}${pbTableHtml(athPBs, false)}`;
+      return `<div class="section-heading">RECORDS — ${(ath?.full_name || '').toUpperCase()}</div>${pbTableHtml(athPBs, false)}`;
     }
   } else {
     // Athlete view: show both PBs and unavailability
@@ -3011,7 +3009,6 @@ function renderRecordsView(isCoach) {
         <div class="section-heading" style="margin:0">MY RECORDS</div>
         <button class="btn btn-ghost btn-sm" onclick="openAddPB()" style="border-color:var(--gold);color:var(--gold)">+ Add PB</button>
       </div>
-      ${vdotPanelHtml(personalBests, currentProfile?.full_name, false)}
       ${!personalBests.length
         ? `<div class="empty-state"><div class="empty-icon">🏆</div><div class="empty-title">NO RECORDS YET</div><div class="empty-sub">Add your PBs manually or log a race result with a standard event to auto-record.</div></div>`
         : pbTableHtml(personalBests, true)}
@@ -3331,6 +3328,35 @@ function vdotPanelHtml(athletePBs, athleteName, isCoach) {
   `;
 }
 
+function renderPacesView(isCoach) {
+  if (isCoach) {
+    if (selectedAthId === 'all') {
+      if (!athletes.length) return `<div class="empty-state"><div class="empty-icon">⚡</div><div class="empty-title">NO ATHLETES YET</div><div class="empty-sub">Add athletes to see their VDOT paces.</div></div>`;
+      const blocks = athletes.map(a => {
+        const athPBs = personalBests.filter(p => p.athlete_id === a.id);
+        return `
+          <div class="records-athlete-group">
+            <div class="records-athlete-hdr">
+              <div class="avatar av-sm">${initials(a.full_name)}</div>
+              <div style="font-size:13px;font-weight:600">${a.full_name}</div>
+              ${vdotBadgeHtml(athPBs)}
+            </div>
+            ${vdotPanelHtml(athPBs, a.full_name, true)}
+          </div>`;
+      }).join('');
+      return `<div class="section-heading">ATHLETE PACES</div>${blocks}`;
+    } else {
+      const athPBs = personalBests.filter(p => p.athlete_id === selectedAthId);
+      const ath = athletes.find(a => a.id === selectedAthId);
+      return `<div class="section-heading">PACES — ${(ath?.full_name || '').toUpperCase()}</div>${vdotPanelHtml(athPBs, ath?.full_name, true)}`;
+    }
+  } else {
+    return `
+      <div class="section-heading">MY PACES</div>
+      ${vdotPanelHtml(personalBests, currentProfile?.full_name, false)}`;
+  }
+}
+
 // ══════════════════════════════════════════════════
 //  RENDER — COACH VIEW
 // ══════════════════════════════════════════════════
@@ -3386,6 +3412,8 @@ function renderCoachView() {
     content = weekNavHtml() + renderWeekGrid(ws, selectedAthId === 'all');
   } else if (currentView === 'records') {
     content = renderRecordsView(true);
+  } else if (currentView === 'paces') {
+    content = renderPacesView(true);
   } else {
     content = unavailSectionHtml(true);
     content += raceSectionHtml({ isCoach: true, showAthlete: selectedAthId === 'all' });
@@ -3433,6 +3461,7 @@ function renderCoachView() {
               <button class="vs-btn ${currentView === 'week' ? 'active' : ''}" onclick="setView('week')">Week</button>
               <button class="vs-btn ${currentView === 'progress' ? 'active' : ''}" onclick="setView('progress')">Progress</button>
               <button class="vs-btn ${currentView === 'records' ? 'active' : ''}" onclick="setView('records')">Records</button>
+              <button class="vs-btn ${currentView === 'paces' ? 'active' : ''}" onclick="setView('paces')">Paces</button>
               <button class="vs-btn ${currentView === 'feed' ? 'active' : ''}" onclick="setView('feed')">Feed</button>
             </div>
             <button class="btn btn-ghost btn-xs" onclick="toggleUnits()" style="font-family:var(--mono);font-size:11px">${usesMiles ? 'MI → KM' : 'KM → MI'}</button>
@@ -3503,6 +3532,8 @@ function renderAthleteView() {
     content = weekNavHtml() + renderWeekGrid(ws, false);
   } else if (currentView === 'records') {
     content = renderRecordsView(false);
+  } else if (currentView === 'paces') {
+    content = renderPacesView(false);
   } else {
     const shown = athleteTab === 'upcoming' ? upcoming : past;
     content = unavailSectionHtml(false);
@@ -3544,6 +3575,7 @@ function renderAthleteView() {
           <button class="vs-btn ${currentView === 'week' ? 'active' : ''}" onclick="setView('week')">Week</button>
           <button class="vs-btn ${currentView === 'progress' ? 'active' : ''}" onclick="setView('progress')">Progress</button>
           <button class="vs-btn ${currentView === 'records' ? 'active' : ''}" onclick="setView('records')">Records</button>
+          <button class="vs-btn ${currentView === 'paces' ? 'active' : ''}" onclick="setView('paces')">Paces</button>
           <button class="vs-btn ${currentView === 'feed' ? 'active' : ''}" onclick="setView('feed')">Feed</button>
         </div>
         <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">

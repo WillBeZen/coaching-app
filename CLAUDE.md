@@ -138,7 +138,7 @@ Races have an optional `event` field. Standard events include: `800m`, `1500m`, 
 - **Training zones**: Easy (59–74%), Marathon (75–84%), Threshold (83–88%), Interval (95–100%), Repetition (105–120%) — all as % of VO2max.
 - **VDOT source priority**: `predicted_time` → `sb_time` → `pb_time`. Highest VDOT across all events is used.
 - **`predicted_time`**: Nullable column on `personal_bests`. Coach-editable only. Stored in same MM:SS / HH:MM:SS format.
-- **UI**: VDOT hero panel + training paces grid + race predictions table in Records tab. VDOT badge in all-athletes view. Pace hint in session creation modal mapped by session type to zone.
+- **UI**: Dedicated "Paces" tab in both coach & athlete views. VDOT hero panel + training paces grid + race predictions table. VDOT badge in all-athletes paces view. Pace hint in session creation modal mapped by session type to zone.
 
 ## Current Focus / Known Issues
 
