@@ -502,7 +502,7 @@
       .coach-layout { grid-template-columns: 1fr; }
       .sidebar {
         position: fixed; left: -260px; top: 0; bottom: 0;
-        width: 240px; height: 100svh;
+        width: 240px;
         transition: left .25s ease; z-index: 300;
       }
       .sidebar.open { left: 0; }
@@ -514,7 +514,7 @@
       .page-actions { width: 100%; flex-direction: column; align-items: stretch; gap: 8px; }
       .page-actions .view-switch { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-shrink: 0; }
       .page-actions .view-switch::-webkit-scrollbar { display: none; }
-      .page-actions .btn { text-align: center; }
+      .page-actions .btn { text-align: center; width: 100%; }
       .athlete-layout { padding: 12px 16px; }
       .modal { padding: 20px; }
       .charts-grid { grid-template-columns: 1fr; }
@@ -3558,13 +3558,13 @@ function renderCoachView() {
     // Sessions within the 7-day rolling window
     const windowSessions = sessions.filter(s => s.scheduled_date >= cutoff);
 
-    // Upcoming: future, or past-7d but not logged
+    // Upcoming: date >= today (all types, regardless of log status)
     const upcomingSessions = windowSessions.filter(s =>
-      new Date(s.scheduled_date + 'T00:00:00') >= todayD || !logs[s.id]
+      new Date(s.scheduled_date + 'T00:00:00') >= todayD
     );
-    // Past: within window, before today, and logged
+    // Past: date < today (all types, regardless of log status)
     const pastSessions = windowSessions.filter(s =>
-      new Date(s.scheduled_date + 'T00:00:00') < todayD && !!logs[s.id]
+      new Date(s.scheduled_date + 'T00:00:00') < todayD
     ).reverse();
 
     const shown = coachTab === 'upcoming' ? upcomingSessions : pastSessions;
