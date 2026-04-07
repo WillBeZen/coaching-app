@@ -1133,6 +1133,7 @@ let pendingRegPass  = null;
 let selectedAthId   = 'all';
 let selectedGroupId = null;  // null = no group filter, uuid = group selected
 let athleteTab      = 'upcoming';
+let coachTab        = 'upcoming';
 let currentView     = 'list';  // 'list' | 'week' | 'progress' | 'records' | 'feed'
 let feedTab         = 'all';   // 'all' | group_id
 let weekStart       = getMonday(new Date());
@@ -1309,7 +1310,7 @@ async function loadCoachSessions() {
 
 async function loadAthleteSessions() {
   const { data } = await sb.from('sessions').select('*')
-    .eq('athlete_id', currentUser.id)
+    .or(`athlete_id.eq.${currentUser.id},and(coach_id.eq.${currentUser.id},is_extra.is.true)`)
     .order('scheduled_date', { ascending: true });
   sessions = data || [];
   await loadLogs(sessions.map(s => s.id));
@@ -1404,6 +1405,7 @@ async function loadFeed() {
       p.target_type === 'all' ||
       (p.target_type === 'group' && myGroupIds.includes(p.target_id)) ||
       (p.target_type === 'athlete' && myAthIds.includes(p.target_id)) ||
+      (p.target_type === 'coach' && p.target_id === currentUser.id) ||
       myAthIds.includes(p.author_id)
     );
   } else {
@@ -2542,11 +2544,12 @@ async function handleLogSession() {
       const stars = '★'.repeat(currentRating);
       const distPart = dist ? ` · ${dist}${distUnit()}` : '';
       const postContent = `✅ ${sess.title}${distPart} — ${stars}`;
-      const myGroupIds = groupMembers.filter(m => m.athlete_id === currentUser.id && !m.left_at).map(m => m.group_id);
+      const myGroupIds = groupMembers.filter(m => m.athlete_id === currentUser.id && !m.left_at && !m.muted_at).map(m => m.group_id);
       if (myGroupIds.length) {
         for (const gid of myGroupIds) await autoPost('auto_session', postContent, 'group', gid, { session_id: sessionId, rating: currentRating });
       } else {
-        await autoPost('auto_session', postContent, 'all', null, { session_id: sessionId, rating: currentRating });
+        // Post to coach if not in any groups
+        await autoPost('auto_session', postContent, 'coach', sess.coach_id, { session_id: sessionId, rating: currentRating });
       }
     }
   }
@@ -2645,6 +2648,10 @@ function detailBody(s, log) {
   const isCoach   = currentProfile.role === 'coach';
   const athlete   = isCoach ? athletes.find(a => a.id === s.athlete_id) : null;
   const completed = !!log;
+  const todayD    = new Date(); todayD.setHours(0,0,0,0);
+  const sessionD  = new Date(s.scheduled_date + 'T00:00:00');
+  const isFuture  = sessionD > todayD;
+
   return `
     <div>
       ${athlete ? `<div class="athlete-tag" style="margin-bottom:12px">
@@ -2666,7 +2673,7 @@ function detailBody(s, log) {
           <button class="btn btn-ghost btn-sm" onclick="closeModal('m-detail');openDuplicate('${s.id}')">Duplicate</button>
           <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>
         ` : !completed ? `
-          <button class="btn btn-primary btn-sm" onclick="openLogSession('${s.id}')">Log This Session</button>
+          <button class="btn btn-primary btn-sm" ${isFuture ? `disabled style="opacity:0.5;cursor:not-allowed" title="You can only log sessions today or in the past"` : `onclick="openLogSession('${s.id}')"`}>Log This Session</button>
         ` : `
           <button class="btn btn-ghost btn-sm" onclick="openLogSession('${s.id}')">Edit Log</button>
         `}
@@ -2933,6 +2940,10 @@ function listCard(s, { showAthlete = false, isCoach = false } = {}) {
   const log = logs[s.id], completed = !!log, today = isToday(s.scheduled_date);
   const athlete = showAthlete ? athletes.find(a => a.id === s.athlete_id) : null;
   const isExtra = s.is_extra === true;
+  const todayD  = new Date(); todayD.setHours(0,0,0,0);
+  const sessionD = new Date(s.scheduled_date + 'T00:00:00');
+  const isFuture = sessionD > todayD;
+
   return `<div class="session-card ${completed ? 'done' : ''} ${today ? 'is-today' : ''}">
     ${athlete ? `<div class="athlete-tag">
       <div class="avatar av-sm">${initials(athlete.full_name)}</div>
@@ -2956,7 +2967,7 @@ function listCard(s, { showAthlete = false, isCoach = false } = {}) {
         <button class="btn btn-ghost btn-sm" onclick="openDuplicate('${s.id}')">Duplicate</button>
         <button class="btn btn-danger btn-sm" onclick="deleteSession('${s.id}')">Delete</button>
       ` : !completed ? `
-        <button class="btn btn-primary btn-sm" onclick="openLogSession('${s.id}')">Log This Session</button>
+        <button class="btn btn-primary btn-sm" ${isFuture ? `disabled style="opacity:0.5;cursor:not-allowed" title="You can only log sessions today or in the past"` : `onclick="openLogSession('${s.id}')"`}>Log This Session</button>
       ` : `
         <button class="btn btn-ghost btn-sm" onclick="openLogSession('${s.id}')">Edit Log</button>
       `}
@@ -3147,6 +3158,9 @@ function feedPostHtml(post, isCoach) {
   } else if (post.target_type === 'athlete') {
     const a = athletes.find(x => x.id === post.target_id);
     if (a) targetLabel = `<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono)">→ ${a.full_name}</span>`;
+  } else if (post.target_type === 'coach') {
+    const c = athletes.find(x => x.id === post.target_id);
+    if (c) targetLabel = `<span style="font-size:10px;color:var(--text-dim);font-family:var(--mono)">→ 👨‍🏫 Coach</span>`;
   }
 
   const canDelete = isCoach || post.author_id === currentUser.id;
@@ -3524,11 +3538,35 @@ function renderCoachView() {
   } else if (currentView === 'paces') {
     content = renderPacesView(true);
   } else {
+    // List view with 7-day rolling window + Upcoming/Past tabs
+    const cutoff = dateStr(addDays(new Date(), -7));
+    const todayD = new Date(); todayD.setHours(0,0,0,0);
+
+    // Sessions within the 7-day rolling window
+    const windowSessions = sessions.filter(s => s.scheduled_date >= cutoff);
+
+    // Upcoming: future, or past-7d but not logged
+    const upcomingSessions = windowSessions.filter(s =>
+      new Date(s.scheduled_date + 'T00:00:00') >= todayD || !logs[s.id]
+    );
+    // Past: within window, before today, and logged
+    const pastSessions = windowSessions.filter(s =>
+      new Date(s.scheduled_date + 'T00:00:00') < todayD && !!logs[s.id]
+    ).reverse();
+
+    const shown = coachTab === 'upcoming' ? upcomingSessions : pastSessions;
+    const cardOpts = { showAthlete: selectedAthId === 'all', isCoach: true };
+
     content = unavailSectionHtml(true);
     content += raceSectionHtml({ isCoach: true, showAthlete: selectedAthId === 'all' });
-    content += sessions.length === 0
-      ? `<div class="empty-state"><div class="empty-icon">🏎️</div><div class="empty-title">NO SESSIONS YET</div><div class="empty-sub">${athletes.length === 0 ? 'Add a driver to your pit crew first.' : 'Ka-chow! Hit "+ New Session" to get rolling.'}</div></div>`
-      : `<div class="sessions-grid">${sessions.map(s => listCard(s, { showAthlete: selectedAthId === 'all', isCoach: true })).join('')}</div>`;
+    content += `
+      <div class="view-tabs">
+        <button class="view-tab ${coachTab === 'upcoming' ? 'active' : ''}" onclick="switchCoachTab('upcoming')">Upcoming</button>
+        <button class="view-tab ${coachTab === 'past' ? 'active' : ''}" onclick="switchCoachTab('past')">Past</button>
+      </div>
+      ${shown.length === 0
+        ? `<div class="empty-state"><div class="empty-icon">${coachTab === 'upcoming' ? '🏎️' : '🏁'}</div><div class="empty-title">NO ${coachTab === 'upcoming' ? 'UPCOMING' : 'PAST'} SESSIONS</div><div class="empty-sub">${coachTab === 'upcoming' ? (sessions.length === 0 ? 'Add a driver to your pit crew first.' : 'Ka-chow! Hit "+ New Session" to get rolling.') : 'Finished sessions appear here.'}</div></div>`
+        : `<div class="sessions-grid">${shown.map(s => listCard(s, cardOpts)).join('')}</div>`}`;
   }
 
   el('app').innerHTML = `
@@ -3610,8 +3648,15 @@ function openAddAthlete() {
 // ══════════════════════════════════════════════════
 function renderAthleteView() {
   const todayD = new Date(); todayD.setHours(0,0,0,0);
-  const upcoming = sessions.filter(s => new Date(s.scheduled_date + 'T00:00:00') >= todayD);
-  const past     = sessions.filter(s => new Date(s.scheduled_date + 'T00:00:00') <  todayD).reverse();
+  const cutoff = dateStr(addDays(new Date(), -7));
+
+  // Sessions within the 7-day rolling window
+  const windowSessions = sessions.filter(s => s.scheduled_date >= cutoff);
+
+  // Upcoming: sessions with date > today (strictly future)
+  const upcoming = windowSessions.filter(s => new Date(s.scheduled_date + 'T00:00:00') > todayD);
+  // Past: sessions with date <= today (past or today)
+  const past     = windowSessions.filter(s => new Date(s.scheduled_date + 'T00:00:00') <= todayD).reverse();
   const totalKm  = Object.values(logs).reduce((sum, l) => sum + (l.actual_distance_km || 0), 0);
 
   // Streak: consecutive weeks with at least one logged session
@@ -3704,6 +3749,7 @@ function renderAthleteView() {
 }
 
 function switchAthleteTab(tab) { athleteTab = tab; renderApp(); }
+function switchCoachTab(tab) { coachTab = tab; renderApp(); }
 function setView(v) { currentView = v; renderApp(); }
 
 // ══════════════════════════════════════════════════
