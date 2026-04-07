@@ -6,7 +6,7 @@
   <title>PaceCoach 95</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Mono:wght@400;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=JetBrains+Mono:wght@400;700&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
 
   <style>
     /* ── TOKENS ─────────────────────────────────────────────── */
@@ -38,9 +38,9 @@
   --purple:      #8B5CF6;
   --purple-dim:  rgba(139, 92, 246, 0.1);
 
-  --mono:  'Space Mono', monospace;
-  --sans:  'DM Sans', sans-serif;
-  --disp:  'Bebas Neue', sans-serif;
+  --mono:  'JetBrains Mono', monospace;
+  --sans:  'Manrope', sans-serif;
+  --disp:  'Chakra Petch', sans-serif;
   --r:  8px;
   --rl: 12px;
 }
@@ -507,15 +507,28 @@
       }
       .sidebar.open { left: 0; }
       .mobile-topbar { display: flex; }
-      .main { padding: 16px; }
+      .main { padding: 12px 16px; }
       .form-row { grid-template-columns: 1fr; }
-      .page-header { flex-direction: column; align-items: stretch; }
-      .page-actions { width: 100%; }
-      .page-actions .btn { flex: 1; }
-      .athlete-layout { padding: 16px; }
+      .page-header { flex-direction: column; align-items: stretch; gap: 10px; }
+      .page-title { font-size: 26px; }
+      .page-actions { width: 100%; flex-direction: column; align-items: stretch; gap: 8px; }
+      .page-actions .view-switch { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; flex-shrink: 0; }
+      .page-actions .view-switch::-webkit-scrollbar { display: none; }
+      .page-actions .btn { text-align: center; }
+      .athlete-layout { padding: 12px 16px; }
       .modal { padding: 20px; }
       .charts-grid { grid-template-columns: 1fr; }
       .races-grid { grid-template-columns: 1fr; }
+      .session-card { padding: 14px 16px; }
+      .stats-strip { grid-template-columns: 1fr 1fr; }
+      /* athlete view controls */
+      .athlete-controls { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
+      .athlete-btns { display: grid !important; grid-template-columns: 1fr 1fr; gap: 8px; }
+      .athlete-btns .btn { text-align: center; justify-content: center; font-size: 11px; padding: 6px 8px; }
+      /* view-switch: scrollable row */
+      .view-switch { overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+      .view-switch::-webkit-scrollbar { display: none; }
+      .vs-btn { white-space: nowrap; }
     }
   </style>
 </head>
@@ -3723,7 +3736,7 @@ function renderAthleteView() {
         <div class="stats-tile"><div class="stats-tile-val" style="color:var(--warning)">${streak > 0 ? streak + 'w' : '—'}</div><div class="stats-tile-lbl">Streak</div></div>
       </div>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px">
+      <div class="athlete-controls" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;flex-wrap:wrap;gap:8px">
         <div class="view-switch">
           <button class="vs-btn ${currentView === 'list' ? 'active' : ''}" onclick="setView('list')">List</button>
           <button class="vs-btn ${currentView === 'week' ? 'active' : ''}" onclick="setView('week')">Week</button>
@@ -3732,7 +3745,7 @@ function renderAthleteView() {
           <button class="vs-btn ${currentView === 'paces' ? 'active' : ''}" onclick="setView('paces')">Paces</button>
           <button class="vs-btn ${currentView === 'feed' ? 'active' : ''}" onclick="setView('feed')">Feed</button>
         </div>
-        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div class="athlete-btns" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
           <button class="btn btn-ghost btn-xs" onclick="toggleUnits()" style="font-family:var(--mono);font-size:11px">${usesMiles ? 'MI → KM' : 'KM → MI'}</button>
           <button class="btn btn-ghost btn-sm" onclick="openAthleteRace()" style="border-color:var(--gold);color:var(--gold)">+ My Race</button>
           <button class="btn btn-ghost btn-sm" onclick="openAddExtraSession()" style="border-color:var(--purple);color:var(--purple)">+ Log Session</button>
