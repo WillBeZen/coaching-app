@@ -18,6 +18,7 @@ Free coaching platform for runners. Single-file static HTML app backed by Supaba
 - `schema.sql` — Run once in Supabase SQL Editor. Creates all tables + RLS policies.
 - `notify-athlete.ts` — Deno edge function deployed to Supabase. Sends branded HTML email via Resend.
 - `PaceCoach_Setup_Guide.docx` — Non-technical setup guide for coaches.
+- `Features.md` — File to show features in the current app.
 
 ## Key Patterns
 
